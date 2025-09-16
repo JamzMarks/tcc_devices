@@ -1,0 +1,57 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Semaforo {
+  id         Int      @id @default(autoincrement())
+  macAddress String   @unique
+  ip         String
+  deviceId   String
+  deviceKey  String
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  packId Int?
+  pack   Pack? @relation(fields: [packId], references: [id])
+
+  subPackId Int?
+  subPack   SubPack? @relation(fields: [subPackId], references: [id])
+}
+
+model Camera {
+  id         Int      @id @default(autoincrement())
+  macAddress String   @unique
+  ip         String
+  deviceKey  String
+  deviceId   String
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Pack {
+  id        Int        @id @default(autoincrement())
+  node      String
+  semaforos Semaforo[]
+  subPacks  SubPack[]
+}
+
+model SubPack {
+  id        Int        @id @default(autoincrement())
+  packId    Int
+  pack      Pack       @relation(fields: [packId], references: [id])
+  semaforos Semaforo[]
+}
