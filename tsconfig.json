@@ -16,6 +16,15 @@
     "forceConsistentCasingInFileNames": true,
     "noImplicitAny": false,
     "strictBindCallApply": false,
-    "noFallthroughCasesInSwitch": false
+    "noFallthroughCasesInSwitch": false,
+    "paths": {
+      "@utils/*": ["src/utils/*"],
+      "@decorators/*": ["src/decorators/*"],
+      "@guards/*": ["src/guards/*"],
+      "@services/*": ["src/services/*"],
+      "@controllers/*": ["src/controllers/*"],
+      "@dtos/*": ["src/dto/*"],
+      "@interceptors/*": ["src/interceptors/*"]
+    }
   }
 }

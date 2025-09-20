@@ -6,6 +6,9 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
 import { Registry } from 'azure-iothub';
+import { SemafotoFilters } from '@dtos/semaforos/semaforo-filters.dto';
+import { DeviceType } from 'generated/prisma';
+import { isValidIP } from '@utils/isValidIP';
 
 @Injectable()
 export class SemaforoService {
@@ -21,6 +24,8 @@ export class SemaforoService {
     });
     if (exists)
       throw new BadRequestException('Semáforo com esse MAC já existe');
+    if (!isValidIP(ip))
+      throw new BadRequestException('Endereço de IP não é válido');
 
     let azureDevice;
     try {
@@ -51,8 +56,40 @@ export class SemaforoService {
     }
   }
 
-  async getAllSemaforos() {
-    return this.prisma.semaforo.findMany();
+  async getAllSemaforos(filters: SemafotoFilters) {
+    const { query, subPack, isActive, pack, page = 1, limit = 20 } = filters;
+    const skip = (page - 1) * limit;
+
+    const queryData = [
+      query
+        ? {
+            OR: [
+              { macAddress: { contains: query } },
+              { ip: { contains: query } },
+              { deviceId: { contains: query } },
+            ],
+          }
+        : {},
+      subPack ? { subPackId: subPack } : {},
+      pack ? { packId: pack } : {},
+      isActive ? { isActive } : {},
+    ];
+
+    const [semaforos, total] = await Promise.all([
+      this.prisma.semaforo.findMany({
+        where: {
+          AND: queryData,
+        },
+        skip,
+        take: limit,
+      }),
+      this.prisma.semaforo.count({
+        where: {
+          AND: queryData,
+        },
+      }),
+    ]);
+    return { data: semaforos, total, page, limit };
   }
 
   async getSemaforo(id: number) {
@@ -65,7 +102,6 @@ export class SemaforoService {
     const semaforo = await this.prisma.semaforo.findUnique({ where: { id } });
     if (!semaforo) throw new NotFoundException('Semáforo não encontrado');
 
-    // Verifica duplicidade do MAC
     if (
       semafotoDto.macAddress &&
       semafotoDto.macAddress !== semaforo.macAddress
@@ -86,7 +122,18 @@ export class SemaforoService {
     const semaforo = await this.prisma.semaforo.findUnique({ where: { id } });
     if (!semaforo) throw new NotFoundException('Semáforo não encontrado');
 
-    return this.prisma.semaforo.delete({ where: { id } });
+    await this.prisma.semaforo.delete({ where: { id } });
+
+    try {
+      await this.registry.delete(semaforo.deviceId);
+    } catch (err) {
+      await this.prisma.pendingDeletionDevice.create({
+        data: {
+          deviceId: semaforo.deviceId,
+          resource: DeviceType.Semaforo,
+        },
+      });
+    }
   }
 
   async getByMacAdress(macAddress: string, ip: string) {
@@ -94,12 +141,12 @@ export class SemaforoService {
       where: { macAddress },
     });
     if (!semaforo) throw new NotFoundException('Semáforo não encontrado');
-
-    if (semaforo.ip != ip) {
-      this.updateSemaforo(semaforo.id, {
-        macAddress: semaforo.macAddress,
-        ip: semaforo.ip,
-      });
-    }
+    return semaforo;
+    // if (semaforo.ip != ip) {
+    //   this.updateSemaforo(semaforo.id, {
+    //     macAddress: semaforo.macAddress,
+    //     ip: semaforo.ip,
+    //   });
+    // }
   }
 }

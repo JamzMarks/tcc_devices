@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Put, Delete, Param, Body } from '@nestjs/common';
+import { SemafotoFilters } from '@dtos/semaforos/semaforo-filters.dto';
+import { Controller, Get, Post, Put, Delete, Param, Body, Query } from '@nestjs/common';
 import { SemafotoDto } from 'src/dto/semaforo.dto';
 import { SemaforoService } from 'src/services/semaforo.service';
 
@@ -8,8 +9,8 @@ export class SemaforoController {
   constructor(private readonly semaforoService: SemaforoService) {}
 
   @Get()
-  getAll() {
-    return this.semaforoService.getAllSemaforos();
+  getAll(@Query() filters: SemafotoFilters) {
+    return this.semaforoService.getAllSemaforos(filters);
   }
 
   @Get(':id')

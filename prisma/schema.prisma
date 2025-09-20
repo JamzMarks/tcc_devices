@@ -23,9 +23,8 @@ model Semaforo {
   isActive   Boolean  @default(true)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-
-  packId Int?
-  pack   Pack? @relation(fields: [packId], references: [id])
+  packId     Int?
+  pack       Pack?    @relation(fields: [packId], references: [id])
 
   subPackId Int?
   subPack   SubPack? @relation(fields: [subPackId], references: [id])
@@ -54,4 +53,16 @@ model SubPack {
   packId    Int
   pack      Pack       @relation(fields: [packId], references: [id])
   semaforos Semaforo[]
+}
+
+enum DeviceType {
+  Semaforo
+  Camera
+}
+
+model PendingDeletionDevice {
+  id        String     @id @default(cuid())
+  deviceId  String
+  resource  DeviceType
+  createdAt DateTime   @default(now())
 }

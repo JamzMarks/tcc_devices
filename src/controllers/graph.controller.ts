@@ -1,6 +1,17 @@
-import { Controller, Get, Query, Res, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Query,
+  Res,
+  HttpStatus,
+  Post,
+  UseInterceptors,
+  UploadedFile,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import { Parser as Json2CsvParser } from 'json2csv';
+import { diskStorage } from 'multer';
 import { GraphService } from 'src/services/graph.service';
 
 @Controller('graph')
@@ -15,13 +26,19 @@ export class GraphController {
       return res.status(HttpStatus.OK).json(data);
     } catch (err) {
       console.error(err);
-      return res.status(500).json({ message: 'Erro exportando grafo', error: err.message });
+      return res
+        .status(500)
+        .json({ message: 'Erro exportando grafo', error: err.message });
     }
   }
 
   // Paginated nodes + relationships (saída JSON)
   @Get('export/paged')
-  async exportPaged(@Query('skip') skip: string, @Query('limit') limit: string, @Res() res: Response) {
+  async exportPaged(
+    @Query('skip') skip: string,
+    @Query('limit') limit: string,
+    @Res() res: Response,
+  ) {
     const s = Math.max(Number(skip) || 0, 0);
     const l = Math.max(Math.min(Number(limit) || 100, 1000), 1); // cap
     try {
@@ -29,7 +46,10 @@ export class GraphController {
       return res.status(HttpStatus.OK).json({ skip: s, limit: l, ...data });
     } catch (err) {
       console.error(err);
-      return res.status(500).json({ message: 'Erro exportando grafo paginado', error: err.message });
+      return res.status(500).json({
+        message: 'Erro exportando grafo paginado',
+        error: err.message,
+      });
     }
   }
 
@@ -46,7 +66,8 @@ export class GraphController {
       const full = await this.graphService.exportFullGraph(); // para grafos muito grandes trocar por streaming
       // Emit nodes
       const nodeRows = full.nodes.map((n) => {
-        const p = typeof n.properties === 'object' ? JSON.stringify(n.properties) : '';
+        const p =
+          typeof n.properties === 'object' ? JSON.stringify(n.properties) : '';
         return {
           kind: 'node',
           id: n.id,
@@ -72,5 +93,31 @@ export class GraphController {
       console.error(err);
       res.status(500).send('Erro gerando CSV: ' + err.message);
     }
+  }
+
+  @Post('upload/osm')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: './uploads', // cria pasta uploads
+        filename: (req, file, cb) => cb(null, file.originalname),
+      }),
+    }),
+  )
+  async uploadOsm(@UploadedFile() file: Express.Multer.File) {
+    return this.graphService.importFromFile(file.path);
+  }
+
+  @Post('upload/json')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: './uploads', // cria pasta uploads
+        filename: (req, file, cb) => cb(null, file.originalname),
+      }),
+    }),
+  )
+  async uploadJson(@UploadedFile() file: Express.Multer.File) {
+    return this.graphService.importFromJson(file.path);
   }
 }
