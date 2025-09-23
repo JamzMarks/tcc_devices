@@ -120,4 +120,17 @@ export class GraphController {
   async uploadJson(@UploadedFile() file: Express.Multer.File) {
     return this.graphService.importFromJson(file.path);
   }
+
+  @Get('ways')
+  async getNodeWays(@Res() res: Response) {
+    try {
+      const data = await this.graphService.getWays();
+      return res.status(HttpStatus.OK).json(data);
+    } catch (err) {
+      console.error(err);
+      return res
+        .status(500)
+        .json({ message: 'Erro exportando grafo', error: err.message });
+    }
+  }
 }

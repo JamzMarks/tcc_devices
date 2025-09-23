@@ -6,7 +6,7 @@ import { ResponseInterceptor } from './interceptors/response.interceptor';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors({
-    origin: 'https://localhost:3000', // origem permitida
+    origin: ['https://localhost:3000', 'https://tccdashboard.vercel.app/'], // origem permitida
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true, // se você precisar enviar cookies
   });

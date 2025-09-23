@@ -2,6 +2,7 @@ import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import neo4j, { Driver, Session } from 'neo4j-driver';
 import * as fs from 'fs';
 import * as xml2js from 'xml2js';
+import { WayName } from '@Types/graph/ways';
 
 @Injectable()
 export class GraphService implements OnModuleInit, OnModuleDestroy {
@@ -333,6 +334,50 @@ export class GraphService implements OnModuleInit, OnModuleDestroy {
         success: true,
         nodes: nodes.length,
         ways: ways.length,
+      };
+    } finally {
+      await session.close();
+    }
+  }
+
+
+  async getWays(){
+    const session = this.session();
+    try {
+      const nodesResult = await session.run(`MATCH (n:${WayName}) RETURN DISTINCT n`);
+      const nodesMap = new Map<string, any>();
+
+      for (const rec of nodesResult.records) {
+        const node = rec.get('n');
+        const id = node.identity.toString();
+        nodesMap.set(id, {
+          node
+          // id,
+          // labels: node.tags,
+          // properties: node.properties,
+          // lat: node.lat,
+          // lon: node.lon,
+        });
+      }
+
+      // const relsResult = await session.run(
+      //   `MATCH ()-[r]->() RETURN DISTINCT r`,
+      // );
+      // const relationships: any[] = [];
+      // for (const rec of relsResult.records) {
+      //   const r = rec.get('r');
+      //   relationships.push({
+      //     id: r.identity.toString(),
+      //     type: r.type,
+      //     startNodeId: r.start.toString(),
+      //     endNodeId: r.end.toString(),
+      //     properties: r.properties,
+      //   });
+      // }
+
+      return {
+        nodes: Array.from(nodesMap.values()),
+
       };
     } finally {
       await session.close();

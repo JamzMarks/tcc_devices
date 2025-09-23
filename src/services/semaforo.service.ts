@@ -111,10 +111,10 @@ export class SemaforoService {
       });
       if (exists) throw new BadRequestException('MAC já está em uso');
     }
-
+    const { id: teste, macAddress, createdAt, ...allowedData } = semafotoDto;
     return this.prisma.semaforo.update({
       where: { id },
-      data: { ...semafotoDto },
+      data: { ...allowedData },
     });
   }
 
