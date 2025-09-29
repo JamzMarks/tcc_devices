@@ -11,10 +11,12 @@ import { GraphService } from './services/graph.service';
 import { GraphController } from './controllers/graph.controller';
 import { MqttConnectionService } from './services/mqttConnection.service';
 import { MqttController } from './controllers/mqttConnection.controller';
+import { SchemaController } from '@controllers/schema.controller';
+import { SchemaService } from '@services/schema.service';
 
 @Module({
   imports: [],
-  controllers: [CameraController, PackController, SemaforoController, GraphController, MqttController],
-  providers: [SemaforoService, PrismaService, PackService, CameraService, GraphService, MqttConnectionService],
+  controllers: [CameraController, PackController, SemaforoController, GraphController, MqttController, SchemaController],
+  providers: [SemaforoService, PrismaService, PackService, CameraService, GraphService, MqttConnectionService, SchemaService],
 })
 export class AppModule {}

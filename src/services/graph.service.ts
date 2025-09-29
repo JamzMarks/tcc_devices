@@ -318,7 +318,7 @@ export class GraphService implements OnModuleInit, OnModuleDestroy {
         { ways },
       );
 
-      // criar edges 
+      // criar edges
       await session.run(
         `
       UNWIND $ways AS w
@@ -340,45 +340,92 @@ export class GraphService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-
-  async getWays(){
+  //ways
+  async getWays() {
     const session = this.session();
     try {
-      const nodesResult = await session.run(`MATCH (n:${WayName}) RETURN DISTINCT n`);
+      const nodesResult = await session.run(`MATCH (n:${WayName}) RETURN n `);
       const nodesMap = new Map<string, any>();
 
       for (const rec of nodesResult.records) {
         const node = rec.get('n');
-        const id = node.identity.toString();
-        nodesMap.set(id, {
-          node
-          // id,
-          // labels: node.tags,
-          // properties: node.properties,
-          // lat: node.lat,
-          // lon: node.lon,
+        const { name, ...rest } = node.properties;
+        try {
+          const id = node.elementId;
+          nodesMap.set(id, {
+            id: id,
+            name: name,
+            labels: node.tags,
+            elementId: node.elementId,
+            properties: rest,
+          });
+        } catch (error) {
+          console.log(node);
+        }
+      }
+      return {
+        nodes: Array.from(nodesMap.values()),
+      };
+    } finally {
+      await session.close();
+    }
+  }
+
+  async getCommonNodesBetweenWays(name1: string, name2: string) {
+    const session = this.session();
+    try {
+      const query = `
+      MATCH (w1:OSMWay {name: $name1})-[:HAS_NODE]->(n:OSMNode)<-[:HAS_NODE]-(w2:OSMWay {name: $name2})
+      RETURN DISTINCT n
+    `;
+
+      const result = await session.run(query, { name1, name2 });
+      const nodes: any[] = [];
+
+      for (const rec of result.records) {
+        const node = rec.get('n');
+        nodes.push({
+          id: node.elementId,
+          labels: node.labels,
+          properties: node.properties,
         });
       }
 
-      // const relsResult = await session.run(
-      //   `MATCH ()-[r]->() RETURN DISTINCT r`,
-      // );
-      // const relationships: any[] = [];
-      // for (const rec of relsResult.records) {
-      //   const r = rec.get('r');
-      //   relationships.push({
-      //     id: r.identity.toString(),
-      //     type: r.type,
-      //     startNodeId: r.start.toString(),
-      //     endNodeId: r.end.toString(),
-      //     properties: r.properties,
-      //   });
-      // }
+      return nodes;
+    } finally {
+      await session.close();
+    }
+  }
 
-      return {
-        nodes: Array.from(nodesMap.values()),
-
-      };
+  async getNodeById(nodeId: number) {
+    const session = this.session();
+    try {
+      const query = `
+      MATCH (n:OSMNode {id: $nodeId})
+      RETURN n
+    `;
+      const result = await session.run(query, { nodeId });  
+      if (result.records.length === 0) {
+        return null;
+      }
+      const node = result.records[0].get('n');
+      return node;
+    } finally {
+      await session.close();
+    }
+  }
+  async createSemaforoInNode(nodeId: number) {
+    const session = this.session();
+    try {
+      const query = `
+      MATCH (n:OSMNode {id: $nodeId})
+      MERGE (s:Semaforo {id: $nodeId})
+      MERGE (n)-[:HAS_SEMAFORO]->(s)
+      RETURN s
+    `;
+    } catch (error) {
+      console.error('Erro ao criar semáforo:', error);
+      throw error;
     } finally {
       await session.close();
     }

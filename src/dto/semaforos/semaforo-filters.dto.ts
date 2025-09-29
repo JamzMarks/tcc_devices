@@ -2,9 +2,10 @@ import {
   IsOptional,
   IsString,
   IsBoolean,
-  IsNumber,
   IsPositive,
   IsInt,
+  Max,
+  Min,
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 
@@ -14,27 +15,37 @@ export class SemafotoFilters {
   query?: string;
 
   @IsOptional()
-  @IsNumber()
-  @IsPositive()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
   pack?: number;
 
   @IsOptional()
-  @IsNumber()
-  @IsPositive()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
   subPack?: number;
 
   @IsOptional()
-  @Transform(({ value }) => value === 'true')
+  @Transform(({ value }) => {
+  if (typeof value === 'string') {
+      return ['true', '1'].includes(value.toLowerCase());
+    }
+    return Boolean(value);
+  })
   @IsBoolean()
   isActive?: boolean;
 
   @IsOptional()
   @Type(() => Number)
   @IsInt()
-  page?: number = 1;
+  @IsPositive()
+  page: number = 1;
 
   @IsOptional()
   @Type(() => Number)
   @IsInt()
-  limit?: number = 20;
+  @IsPositive()
+  @Max(100)
+  limit: number = 20;
 }

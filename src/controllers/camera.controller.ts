@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Param, Body } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, Version } from '@nestjs/common';
 import { CameraService } from 'src/services/camera.service';
 
 
@@ -8,21 +8,25 @@ export class CameraController {
 
 
   @Get()
+  @Version('1')
   getAll() {
     return this.cameraService.getAllCameras();
   }
 
   @Get(':id')
+  @Version('1')
   getOne(@Param('id') id: string) {
     return this.cameraService.getCamera(Number(id));
   }
 
   @Post()
+  @Version('1')
   create(@Body() body: { macAddress: string; deviceId: string, ip: string}) {
     return this.cameraService.createCamera(body.macAddress, body.deviceId, body.ip);
   }
 
   @Put(':id')
+  @Version('1')
   update(
     @Param('id') id: string,
     @Body() body: { macAddress?: string; deviceId?: string; isActive?: boolean },
@@ -36,6 +40,7 @@ export class CameraController {
   }
 
   @Delete(':id')
+  @Version('1')
   delete(@Param('id') id: string) {
     return this.cameraService.deleteCamera(Number(id));
   }

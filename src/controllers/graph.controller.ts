@@ -7,11 +7,14 @@ import {
   Post,
   UseInterceptors,
   UploadedFile,
+  Body,
+  Param,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import { Parser as Json2CsvParser } from 'json2csv';
 import { diskStorage } from 'multer';
+import { parse } from 'path';
 import { GraphService } from 'src/services/graph.service';
 
 @Controller('graph')
@@ -112,7 +115,7 @@ export class GraphController {
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
-        destination: './uploads', // cria pasta uploads
+        destination: './uploads',
         filename: (req, file, cb) => cb(null, file.originalname),
       }),
     }),
@@ -124,8 +127,8 @@ export class GraphController {
   @Get('ways')
   async getNodeWays(@Res() res: Response) {
     try {
-      const data = await this.graphService.getWays();
-      return res.status(HttpStatus.OK).json(data);
+       const data = await this.graphService.getWays();
+       return res.status(HttpStatus.OK).json(data); 
     } catch (err) {
       console.error(err);
       return res
@@ -133,4 +136,30 @@ export class GraphController {
         .json({ message: 'Erro exportando grafo', error: err.message });
     }
   }
+
+  @Post('ways/common/nodes')
+  async getWaysCommonNode(@Body() dto: { way1: string; way2: string; }, @Res() res: Response) {
+    try {
+       const data = await this.graphService.getCommonNodesBetweenWays(dto.way1, dto.way2);
+       return res.status(HttpStatus.OK).json(data); 
+    } catch (err) {
+      console.error(err);
+      return res
+        .status(500)
+        .json({ message: 'Erro exportando grafo', error: err.message });
+    }
+  }
+  @Get('nodes/:id')
+  async getNodeById(@Param("id") id: string, @Res() res: Response) {
+    try {
+       const data = await this.graphService.getNodeById(parseInt(id));
+       return res.status(HttpStatus.OK).json(data); 
+    } catch (err) {
+      console.error(err);
+      return res
+        .status(500)
+        .json({ message: 'Erro exportando grafo', error: err.message });
+    }
+  }
+
 }

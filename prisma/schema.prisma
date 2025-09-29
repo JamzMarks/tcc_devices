@@ -20,14 +20,14 @@ model Semaforo {
   ip         String
   deviceId   String
   deviceKey  String
-  isActive   Boolean  @default(true)
+  isActive   Boolean  @default(false)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   packId     Int?
-  pack       Pack?    @relation(fields: [packId], references: [id])
+  pack       Pack?    @relation(fields: [packId], references: [id], onDelete: SetNull)
 
   subPackId Int?
-  subPack   SubPack? @relation(fields: [subPackId], references: [id])
+  subPack   SubPack? @relation(fields: [subPackId], references: [id], onDelete: SetNull)
 }
 
 model Camera {
@@ -36,7 +36,7 @@ model Camera {
   ip         String
   deviceKey  String
   deviceId   String
-  isActive   Boolean  @default(true)
+  isActive   Boolean  @default(false)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 }
@@ -51,7 +51,7 @@ model Pack {
 model SubPack {
   id        Int        @id @default(autoincrement())
   packId    Int
-  pack      Pack       @relation(fields: [packId], references: [id])
+  pack      Pack       @relation(fields: [packId], references: [id], onDelete: Cascade)
   semaforos Semaforo[]
 }
 
