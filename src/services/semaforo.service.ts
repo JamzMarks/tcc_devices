@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
 import { Registry } from 'azure-iothub';
-import { SemafotoFilters } from '@dtos/semaforos/semaforo-filters.dto';
+import { SemaforoFilters } from '@dtos/semaforos/semaforo-filters.dto';
 import { DeviceType } from 'generated/prisma';
 import { isValidIP } from '@utils/isValidIP';
 
@@ -56,10 +56,9 @@ export class SemaforoService {
     }
   }
 
-  async getAllSemaforos(filters: SemafotoFilters) {
+  async getAllSemaforos(filters: SemaforoFilters) {
     const { query, subPack, isActive, pack, page = 1, limit = 20 } = filters;
     const skip = (page - 1) * limit;
-
     const queryData = [
       query
         ? {
@@ -72,9 +71,8 @@ export class SemaforoService {
         : {},
       subPack ? { subPackId: subPack } : {},
       pack ? { packId: pack } : {},
-      isActive ? { isActive } : {},
+      isActive != undefined ? { isActive } : {},
     ];
-
     const [semaforos, total] = await Promise.all([
       this.prisma.semaforo.findMany({
         where: {

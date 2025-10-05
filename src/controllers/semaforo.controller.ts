@@ -1,4 +1,4 @@
-import { SemafotoFilters } from '@dtos/semaforos/semaforo-filters.dto';
+import { SemaforoFilters } from '@dtos/semaforos/semaforo-filters.dto';
 import { Controller, Get, Post, Put, Delete, Param, Body, Query, Version } from '@nestjs/common';
 import { SemafotoDto } from 'src/dto/semaforo.dto';
 import { SemaforoService } from 'src/services/semaforo.service';
@@ -10,7 +10,8 @@ export class SemaforoController {
 
   @Get()
   @Version('1')
-  getAll(@Query() filters: SemafotoFilters) {
+  getAll(@Query() filters: SemaforoFilters) {
+    console.log(filters);
     return this.semaforoService.getAllSemaforos(filters);
   }
 

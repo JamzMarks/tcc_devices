@@ -414,15 +414,20 @@ export class GraphService implements OnModuleInit, OnModuleDestroy {
       await session.close();
     }
   }
-  async createSemaforoInNode(nodeId: number) {
+
+  async createSemaforoOnNode(nodeId: number) {
     const session = this.session();
     try {
       const query = `
-      MATCH (n:OSMNode {id: $nodeId})
-      MERGE (s:Semaforo {id: $nodeId})
-      MERGE (n)-[:HAS_SEMAFORO]->(s)
-      RETURN s
-    `;
+        MATCH (n:OSMNode {id: ${nodeId}})
+        MERGE (s:Semaforo {id: ${nodeId}})
+        MERGE (n)-[:HAS_TRAFFIC_LIGHT]->(s)
+        RETURN s
+      `;
+      const result = await session.run(query);
+      if (result.records.length === 0) {
+        throw new Error('Nó não encontrado ou semáforo já existe');
+      }
     } catch (error) {
       console.error('Erro ao criar semáforo:', error);
       throw error;
@@ -430,4 +435,34 @@ export class GraphService implements OnModuleInit, OnModuleDestroy {
       await session.close();
     }
   }
+  async createDevice(nodeId1: number, nodeId2: number) {
+  const session = this.session();
+  try {
+    const query = `
+      MATCH (n1:OSMNode {id: $nodeId1})-[:PART_OF]->(w:OSMWay)<-[:PART_OF]-(n2:OSMNode {id: $nodeId2})
+      WITH n1, n2, w
+      MERGE (d:Device {id: apoc.create.uuid()})
+      MERGE (d)-[:FROM_NODE]->(n1)
+      MERGE (d)-[:TO_NODE]->(n2)
+      MERGE (d)-[:ON_WAY]->(w)
+      RETURN d, n1, n2, w
+    `;
+    const result = await session.run(query, { nodeId1, nodeId2 });
+
+    if (result.records.length === 0) {
+      throw new Error("Os nós não pertencem à mesma way");
+    }
+
+    const device = result.records[0].get("d").properties;
+    return device;
+
+  } catch (error) {
+    console.error("Erro ao criar Device:", error);
+    throw error;
+  } finally {
+    await session.close();
+  }
+}
+
+
 }

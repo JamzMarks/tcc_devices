@@ -127,8 +127,8 @@ export class GraphController {
   @Get('ways')
   async getNodeWays(@Res() res: Response) {
     try {
-       const data = await this.graphService.getWays();
-       return res.status(HttpStatus.OK).json(data); 
+      const data = await this.graphService.getWays();
+      return res.status(HttpStatus.OK).json(data);
     } catch (err) {
       console.error(err);
       return res
@@ -138,10 +138,16 @@ export class GraphController {
   }
 
   @Post('ways/common/nodes')
-  async getWaysCommonNode(@Body() dto: { way1: string; way2: string; }, @Res() res: Response) {
+  async getWaysCommonNode(
+    @Body() dto: { way1: string; way2: string },
+    @Res() res: Response,
+  ) {
     try {
-       const data = await this.graphService.getCommonNodesBetweenWays(dto.way1, dto.way2);
-       return res.status(HttpStatus.OK).json(data); 
+      const data = await this.graphService.getCommonNodesBetweenWays(
+        dto.way1,
+        dto.way2,
+      );
+      return res.status(HttpStatus.OK).json(data);
     } catch (err) {
       console.error(err);
       return res
@@ -150,10 +156,10 @@ export class GraphController {
     }
   }
   @Get('nodes/:id')
-  async getNodeById(@Param("id") id: string, @Res() res: Response) {
+  async getNodeById(@Param('id') id: string, @Res() res: Response) {
     try {
-       const data = await this.graphService.getNodeById(parseInt(id));
-       return res.status(HttpStatus.OK).json(data); 
+      const data = await this.graphService.getNodeById(parseInt(id));
+      return res.status(HttpStatus.OK).json(data);
     } catch (err) {
       console.error(err);
       return res
@@ -162,4 +168,16 @@ export class GraphController {
     }
   }
 
+  @Post('nodes/:id/semaforo')
+  async createSemaforoOnNode(@Param('id') id: string, @Res() res: Response) {
+    try {
+      const data = await this.graphService.createSemaforoOnNode(parseInt(id));
+    } catch (err) {
+      console.error(err);
+      return res
+        .status(500)
+        .json({ message: 'Erro exportando grafo', error: err.message });
+    }
+  }
+  
 }

@@ -9,7 +9,7 @@ import {
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 
-export class SemafotoFilters {
+export class SemaforoFilters {
   @IsOptional()
   @IsString()
   query?: string;
@@ -27,12 +27,7 @@ export class SemafotoFilters {
   subPack?: number;
 
   @IsOptional()
-  @Transform(({ value }) => {
-  if (typeof value === 'string') {
-      return ['true', '1'].includes(value.toLowerCase());
-    }
-    return Boolean(value);
-  })
+  @Transform(({ value }) => value === 'true' || value === true)
   @IsBoolean()
   isActive?: boolean;
 
