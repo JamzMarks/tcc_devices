@@ -1,4 +1,4 @@
-export interface SemafotoDto {
+export interface CameraDto {
   id?: number;
   macAddress: string;
   deviceId: string;
@@ -7,6 +7,4 @@ export interface SemafotoDto {
   isActive?: boolean;
   createdAt?: Date; 
   updatedAt?: Date;
-  packId?: number | null;
-  subPackId?: number | null;
 }

@@ -1,16 +1,38 @@
 // create-semaforo.dto.ts
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNumber, IsString, IsOptional } from 'class-validator';
 
-export class CreateSemaforoDto {
+export class UpdateSemaforoDto {
+  
   @IsString()
-  @IsNotEmpty()
-  deviceId: string;
-
-  @IsString()
-  @IsNotEmpty()
-  ip: string;
+  @IsOptional()
+  ip?: string;           
 
   @IsString()
-  @IsNotEmpty()
-  deviceKey: string;
+  @IsOptional()
+  deviceKey?: string;      
+
+  @IsString()
+  @IsOptional()
+  macAddress?: string;     
+
+  @IsOptional()
+  isActive?: boolean;     
+}
+
+
+export class UpdateSemaforoPackDto {
+
+  @IsString()
+  @IsOptional()
+  packId?: number | null;
+
+  @IsNumber()
+  @IsOptional()
+  subPackId?: number | null;
+
+}
+
+export class UpdateSemaforoDeviceIdDto {
+  @IsString()
+  deviceId: string;   
 }
