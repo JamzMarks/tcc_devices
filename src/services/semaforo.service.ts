@@ -1,4 +1,4 @@
-import { SemafotoDto } from './../dto/semaforo.dto';
+import { SemaforoDto } from '../dto/semaforos/semaforo.dto';
 import {
   Injectable,
   BadRequestException,
@@ -96,20 +96,20 @@ export class SemaforoService {
     return semaforo;
   }
 
-  async updateSemaforo(id: number, semafotoDto: Partial<SemafotoDto>) {
+  async updateSemaforo(id: number, SemaforoDto: Partial<SemaforoDto>) {
     const semaforo = await this.prisma.semaforo.findUnique({ where: { id } });
     if (!semaforo) throw new NotFoundException('Semáforo não encontrado');
 
     if (
-      semafotoDto.macAddress &&
-      semafotoDto.macAddress !== semaforo.macAddress
+      SemaforoDto.macAddress &&
+      SemaforoDto.macAddress !== semaforo.macAddress
     ) {
       const exists = await this.prisma.semaforo.findUnique({
-        where: { macAddress: semafotoDto.macAddress },
+        where: { macAddress: SemaforoDto.macAddress },
       });
       if (exists) throw new BadRequestException('MAC já está em uso');
     }
-    const { id: teste, macAddress, createdAt, ...allowedData } = semafotoDto;
+    const { id: semaforoId, createdAt, ...allowedData } = SemaforoDto;
     return this.prisma.semaforo.update({
       where: { id },
       data: { ...allowedData },
@@ -147,4 +147,5 @@ export class SemaforoService {
     //   });
     // }
   }
+
 }

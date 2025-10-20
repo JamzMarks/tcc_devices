@@ -32,10 +32,10 @@ model Semaforo {
 
 model Camera {
   id         Int      @id @default(autoincrement())
-  macAddress String   @unique
+  macAddress String   
   ip         String
   deviceKey  String
-  deviceId   String
+  deviceId   String   @unique
   isActive   Boolean  @default(false)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
