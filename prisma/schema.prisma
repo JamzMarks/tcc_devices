@@ -32,7 +32,7 @@ model Semaforo {
 
 model Camera {
   id         Int      @id @default(autoincrement())
-  macAddress String   
+  macAddress String
   ip         String
   deviceKey  String
   deviceId   String   @unique
@@ -43,7 +43,8 @@ model Camera {
 
 model Pack {
   id        Int        @id @default(autoincrement())
-  node      String
+  name      String
+  cicle     Int
   semaforos Semaforo[]
   subPacks  SubPack[]
 }

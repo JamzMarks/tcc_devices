@@ -75,7 +75,11 @@ export class GraphService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async exportGraphForBuild(): Promise<{ nodes: any[]; relationships: any[] }> {
+  async exportGraphForBuild(): Promise<{
+    nodes: any[];
+    relationships: any[];
+    devices: any[];
+  }> {
     const session = this.session();
     try {
       // Colete nós
@@ -83,6 +87,37 @@ export class GraphService implements OnModuleInit, OnModuleDestroy {
         MATCH p=(w:OSMWay)-[:HAS_NODE]->(n:OSMNode)
         RETURN p
       `);
+
+      const devicesResult = await session.run(`
+        MATCH (n:Semaforo), (m:Device) 
+        RETURN n, m
+      `);
+
+      const devices: any[] = [];
+      for (const rec of devicesResult.records) {
+        const semaforo = rec.get('n');
+        const device = rec.get('m');
+
+        // Adiciona Semaforo
+        if (semaforo) {
+          devices.push({
+            id: semaforo.elementId,
+            type: 'Semaforo',
+            labels: semaforo.labels,
+            properties: semaforo.properties,
+          });
+        }
+
+        // Adiciona Device
+        if (device) {
+          devices.push({
+            id: device.elementId,
+            type: 'Device',
+            labels: device.labels,
+            properties: device.properties,
+          });
+        }
+      }
 
       const waysMap = new Map<string, { properties: any; nodes: any[] }>();
 
@@ -140,6 +175,7 @@ export class GraphService implements OnModuleInit, OnModuleDestroy {
       return {
         nodes: Array.from(waysMap.values()),
         relationships,
+        devices,
       };
     } finally {
       await session.close();
@@ -862,7 +898,7 @@ export class GraphService implements OnModuleInit, OnModuleDestroy {
             // metadata: device.metadata || {},
           },
         );
-        await tx.commit()
+        await tx.commit();
         const deviceRes = result.records[0]?.get('d');
         if (!deviceRes) {
           throw new Error('Erro ao criar o Device');

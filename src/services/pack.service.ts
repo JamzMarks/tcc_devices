@@ -1,49 +1,100 @@
-import { SubPack } from './../../generated/prisma/index.d';
+import { SemaforoService } from 'src/services/semaforo.service';
 import {
   Injectable,
   BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
+import { PackDto } from '@dtos/pack/pack.dto';
 
 @Injectable()
 export class PackService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly semaforoService: SemaforoService,
+  ) {}
 
   /**
    * Cria um Pack com semáforos associados
-   * @param node nome do pack
+   * @param name nome do pack
    * @param semaforoIds array de IDs de semáforos
    */
-  async createPack(node: string, semaforoIds: number[], subPacks: number[]) {
-    if (semaforoIds.length < 2) {
+  async createPack(data: PackDto) {
+    const { name, semaforos, subPacks, configs } = data;
+
+    if (semaforos.length < 2 && subPacks.length === 0) {
       throw new BadRequestException(
-        'Um pack precisa de pelo menos 2 semáforos.',
+        'Um Pack precisa ter pelo menos 2 semáforos ou 1 SubPack.',
       );
     }
+    const semaforosIds: number[] = semaforos.map(s => s.id!) 
+    return this.prisma.$transaction(async (tx) => {
+      if (semaforos.length > 0) {
+        
+        const existingSemaforos =
+          await this.semaforoService.findManyByIds(semaforosIds);
 
-    const pack = await this.prisma.pack.create({
-      data: {
-        node,
-        semaforos: {
-          connect: semaforoIds.map((id) => ({ id })),
+        if (existingSemaforos.length !== semaforos.length) {
+          throw new BadRequestException(
+            'Um ou mais semáforos informados não existem.',
+          );
+        }
+      }
+      const pack = await tx.pack.create({
+        data: {
+          name,
+          cicle: configs.cicle,
+          ...(semaforosIds.length > 0 && {
+            semaforos: {
+              connect: semaforosIds.map((id) => ({ id })),
+            },
+          }),
         },
-        subPacks: {
-          connect: subPacks.map((id) => ({ id })),
+      });
+
+      if (subPacks.length > 0) {
+        for (const sub of subPacks) {
+          if (sub.semaforos.length < 2) {
+            throw new BadRequestException(
+              'Cada SubPack precisa de pelo menos 2 semáforos.',
+            );
+          }
+          const semaforosPackIds: number[] = sub.semaforos.map(s => s.id!) 
+          const existingSubSemaforos = await this.semaforoService.findManyByIds(
+            semaforosPackIds
+          );
+
+          if (existingSubSemaforos.length !== sub.semaforos.length) {
+            throw new BadRequestException(
+              'Um ou mais semáforos do SubPack não existem.',
+            );
+          }
+
+          await tx.subPack.create({
+            data: {
+              packId: pack.id,
+              semaforos: {
+                connect: sub.semaforos.map(({id}) => ({ id })),
+              },
+            },
+          });
+        }
+      }
+
+      return tx.pack.findUnique({
+        where: { id: pack.id },
+        include: {
+          semaforos: true,
+          subPacks: { include: { semaforos: true } },
         },
-      },
-      include: {
-        semaforos: true,
-        subPacks: true,
-      },
+      });
     });
-
-    return pack;
   }
 
   async getAllPacks() {
     return this.prisma.pack.findMany({
       include: {
+        subPacks: true,
         semaforos: true,
       },
     });
@@ -60,11 +111,10 @@ export class PackService {
     return pack;
   }
 
-  async updatePack(id: number, node?: string, semaforoIds?: number[]) {
+  async updatePack(id: number, semaforoIds?: number[]) {
     const pack = await this.prisma.pack.findUnique({ where: { id } });
     if (!pack) throw new NotFoundException('Pack não encontrado');
 
-    // Se passar semáforos, precisa ter pelo menos 2
     if (semaforoIds && semaforoIds.length < 2) {
       throw new BadRequestException(
         'Um pack precisa de pelo menos 2 semáforos.',
@@ -74,7 +124,6 @@ export class PackService {
     return this.prisma.pack.update({
       where: { id },
       data: {
-        node,
         ...(semaforoIds
           ? {
               semaforos: {
@@ -135,7 +184,7 @@ export class PackService {
     return pack;
   }
 
-  async updateSubPack(id: number, node?: string, semaforoIds?: number[]) {
+  async updateSubPack(id: number, semaforoIds?: number[]) {
     const pack = await this.prisma.subPack.findUnique({ where: { id } });
     if (!pack) throw new NotFoundException('Pack não encontrado');
 
@@ -149,7 +198,6 @@ export class PackService {
     return this.prisma.pack.update({
       where: { id },
       data: {
-        node,
         ...(semaforoIds
           ? {
               semaforos: {

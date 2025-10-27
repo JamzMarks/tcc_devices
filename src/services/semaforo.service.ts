@@ -148,4 +148,21 @@ export class SemaforoService {
     // }
   }
 
+  async findManyByIds(ids: number[]) {
+    try {
+      const semaforos = await this.prisma.semaforo.findMany({
+        where: {
+          id: { in: ids },
+        },
+      });
+      if (semaforos.length === 0) {
+        throw new NotFoundException(
+          'Nenhum semáforo encontrado para os IDs informados.',
+        );
+      }
+      return semaforos;
+    } catch (error) {
+      throw new Error(error);
+    }
+  }
 }
