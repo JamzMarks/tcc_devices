@@ -1,3 +1,5 @@
+import { DeviceDto, DeviceGraphDto } from '@dtos/device.dto';
+import { SemaforoDto } from '@dtos/semaforos/semaforo.dto';
 import {
   Controller,
   Get,
@@ -32,6 +34,46 @@ export class GraphController {
       return res
         .status(500)
         .json({ message: 'Erro exportando grafo', error: err.message });
+    }
+  }
+
+   @Get('full-graph')
+  async exportGraph(@Res() res: Response) {
+    try {
+      const data = await this.graphService.exportGraphForBuild();
+      return res.status(HttpStatus.OK).json(data);
+    } catch (err) {
+      console.error(err);
+      return res
+        .status(500)
+        .json({ message: 'Erro exportando grafo', error: err.message });
+    }
+  }
+
+  @Get('clear')
+  async clearGraph(@Res() res: Response){
+    try {
+      const data = await this.graphService.clearGraphData();
+      return res.status(HttpStatus.OK).json(data);
+    } catch (err) {
+      console.error(err);
+      return res
+        .status(500)
+        .json({ message: 'Erro limpando o grafo', error: err.message });
+    }
+  }
+
+  @Post('clear/:wayId')
+  async clearWayNodes(@Param('wayId') wayId: string, @Res() res: Response){
+    try {
+      await this.graphService.clearWayNodes(wayId);
+      const message = 'ok'
+      return res.status(HttpStatus.OK).json(message);
+    } catch (err) {
+      console.error(err);
+      return res
+        .status(500)
+        .json({ message: 'Erro limpando o grafo', error: err.message });
     }
   }
 
@@ -158,7 +200,7 @@ export class GraphController {
   @Get('nodes/:id')
   async getNodeById(@Param('id') id: string, @Res() res: Response) {
     try {
-      const data = await this.graphService.getNodeById(parseInt(id));
+      const data = await this.graphService.getNodeById(id);
       return res.status(HttpStatus.OK).json(data);
     } catch (err) {
       console.error(err);
@@ -169,9 +211,29 @@ export class GraphController {
   }
 
   @Post('nodes/:id/semaforo')
-  async createSemaforoOnNode(@Param('id') id: string, @Res() res: Response) {
+  async createSemaforoOnNode(@Param('id') id: string, @Body() body: {semaforoData: SemaforoDto, wayId: string}, @Res() res: Response) {
     try {
-      const data = await this.graphService.createSemaforoOnNode(parseInt(id));
+      const data = await this.graphService.createSemaforoOnNode(id, body.semaforoData, body.wayId);
+      return res.status(HttpStatus.OK).json(data);
+    } catch (err) {
+      console.error(err);
+      return res
+        .status(500)
+        .json({ message: 'Erro exportando grafo', error: err.message });
+    }
+  }
+
+  @Post('devices')
+  async createDevice(@Body() body: {
+    deviceData: DeviceGraphDto, 
+    wayId: string,
+    node1: string,
+    node2: string
+  }, @Res() res: Response) {
+    try {
+      console.log(body)
+      const data = await this.graphService.createDevice(body.node1, body.node2, body.wayId, body.deviceData);
+      return res.status(HttpStatus.OK).json(data);
     } catch (err) {
       console.error(err);
       return res

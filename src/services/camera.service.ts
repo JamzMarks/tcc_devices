@@ -11,18 +11,18 @@ export class CameraService {
   }
 
   async createCamera(macAddress: string, deviceId: string, ip: string) {
-    const exists = await this.prisma.camera.findUnique({ where: { macAddress } });
+    const exists = await this.prisma.camera.findUnique({ where: { deviceId } });
     if (exists) {
-      throw new BadRequestException('Camera com esse MAC já existe');
+      throw new BadRequestException('DeviceId already in use');
     }
-    let azureDevice;
-    try {
-      azureDevice = await this.registry.create({ deviceId });
-    } catch (err) {
-      throw new BadRequestException(
-        'Erro ao criar device no Azure: ' + err.message,
-      );
-    }
+    // let azureDevice;
+    // try {
+    //   azureDevice = await this.registry.create({ deviceId });
+    // } catch (err) {
+    //   throw new BadRequestException(
+    //     'Erro ao criar device no Azure: ' + err.message,
+    //   );
+    // }
     try {
       const camera = await this.prisma.$transaction(async (tx) => {
         return tx.camera.create({
@@ -31,13 +31,13 @@ export class CameraService {
             deviceId,
             ip,
             deviceKey:
-              azureDevice.responseBody.authentication.symmetricKey.primaryKey,
+              deviceId + macAddress,
           },
         });
       });
       return camera;
     } catch (err) {
-      await this.registry.delete(deviceId);
+      // await this.registry.delete(deviceId);
       throw new BadRequestException(
         'Erro ao salvar no banco, dispositivo Azure removido: ' + err.message,
       );
@@ -61,7 +61,7 @@ export class CameraService {
 
     // Se atualizar MAC, verificar duplicidade
     if (macAddress && macAddress !== camera.macAddress) {
-      const exists = await this.prisma.camera.findUnique({ where: { macAddress } });
+      const exists = await this.prisma.camera.findFirst({ where: { macAddress } });
       if (exists) throw new BadRequestException('MAC já está em uso');
     }
 

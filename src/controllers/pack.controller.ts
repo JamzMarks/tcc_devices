@@ -1,3 +1,4 @@
+import { PackDto } from '@dtos/pack/pack.dto';
 import { Controller, Get, Post, Put, Delete, Param, Body } from '@nestjs/common';
 import { PackService } from 'src/services/pack.service';
 
@@ -17,17 +18,17 @@ export class PackController {
   }
 
   @Post()
-  create(@Body() body: { macAddress: string; semaforosIds: number[],  packsIds: number[],}) {
-    return this.packService.createPack(body.macAddress, body.semaforosIds, body.packsIds);
+  create(@Body() body: PackDto) {
+    return this.packService.createPack(body);
   }
 
-  @Put(':id')
-  update(
-    @Param('id') id: string,
-    @Body() body: { node?: string; semaforos?: number[] },
-  ) {
-    return this.packService.updatePack(Number(id), body.node, body.semaforos);
-  }
+  // @Put(':id')
+  // update(
+  //   @Param('id') id: string,
+  //   @Body() body: { node?: string; semaforos?: number[] },
+  // ) {
+  //   return this.packService.updatePack(Number(id), body.node, body.semaforos);
+  // }
 
   @Delete(':id')
   delete(@Param('id') id: string) {
@@ -52,13 +53,13 @@ export class PackController {
     return this.packService.createSubPack(body.semaforosIds, body.packId);
   }
 
-  @Put('subpack/:id')
-  updateSubPack(
-    @Param('id') id: string,
-    @Body() body: { node?: string; semaforos?: number[] },
-  ) {
-    return this.packService.updateSubPack(Number(id), body.node, body.semaforos);
-  }
+  // @Put('subpack/:id')
+  // updateSubPack(
+  //   @Param('id') id: string,
+  //   @Body() body: { node?: string; semaforos?: number[] },
+  // ) {
+  //   return this.packService.updateSubPack(Number(id), body.node, body.semaforos);
+  // }
 
   @Delete('subpack/:id')
   deleteSubPacks(@Param('id') id: string) {
