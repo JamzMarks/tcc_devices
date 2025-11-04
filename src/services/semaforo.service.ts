@@ -9,7 +9,8 @@ import { Registry } from 'azure-iothub';
 import { SemaforoFilters } from '@dtos/semaforos/semaforo-filters.dto';
 import { DeviceType } from 'generated/prisma';
 import { isValidIP } from '@utils/isValidIP';
-
+import { SharedAccessSignature } from 'azure-iothub';
+import * as crypto from 'crypto';
 @Injectable()
 export class SemaforoService {
   private registry: Registry;
@@ -134,18 +135,25 @@ export class SemaforoService {
     }
   }
 
-  async getByMacAdress(macAddress: string, ip: string) {
+  async getByMacAdress(macAddress: string) {
     const semaforo = await this.prisma.semaforo.findUnique({
       where: { macAddress },
     });
+
     if (!semaforo) throw new NotFoundException('Semáforo não encontrado');
-    return semaforo;
-    // if (semaforo.ip != ip) {
-    //   this.updateSemaforo(semaforo.id, {
-    //     macAddress: semaforo.macAddress,
-    //     ip: semaforo.ip,
-    //   });
-    // }
+
+    // Gerar SAS Token válido por 1 hora (ajuste conforme necessário)
+    const sasToken = this.generateSasToken(
+      process.env.AZURE_IOTHUB_HOSTNAME!,
+      semaforo.deviceId,
+      semaforo.deviceKey,
+      60 * 60 // 1 hora
+    );
+
+    return {
+      ...semaforo,
+      sasToken,
+    };
   }
 
   async findManyByIds(ids: number[]) {
@@ -164,5 +172,24 @@ export class SemaforoService {
     } catch (error) {
       throw new Error(error);
     }
+  }
+
+  private generateSasToken(
+    iotHubHostName: string,
+    deviceId: string,
+    deviceKey: string,
+    ttlSeconds: number,
+  ): string {
+    const resourceUri = `${iotHubHostName}/devices/${deviceId}`;
+    const expiry = Math.floor(Date.now() / 1000) + ttlSeconds;
+
+    const stringToSign = encodeURIComponent(resourceUri) + '\n' + expiry;
+    const hmac = crypto.createHmac('sha256', Buffer.from(deviceKey, 'base64'));
+    hmac.update(stringToSign);
+    const signature = hmac.digest('base64');
+
+    return `SharedAccessSignature sr=${encodeURIComponent(
+      resourceUri,
+    )}&sig=${encodeURIComponent(signature)}&se=${expiry}`;
   }
 }
