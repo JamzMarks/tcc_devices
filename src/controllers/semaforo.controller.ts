@@ -20,7 +20,6 @@ export class SemaforoController {
   @Get()
   @Version('1')
   getAll(@Query() filters: SemaforoFilters) {
-    console.log(filters);
     return this.semaforoService.getAllSemaforos(filters);
   }
 

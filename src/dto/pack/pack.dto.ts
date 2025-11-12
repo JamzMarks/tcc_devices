@@ -24,6 +24,15 @@ export class SubPackDto {
   @IsInt()
   packId?: number;
 
+
+  @IsString()
+  name: string;
+
+  @IsInt()
+  slotStart:    number;
+  @IsInt()
+  slotDuration: number;
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => SemaforoDto) 
@@ -45,11 +54,11 @@ export class PackDto {
 
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => SemaforoDto) // 👈 idem aqui
+  @Type(() => SemaforoDto) 
   semaforos: SemaforoDto[];
 
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => SubPackDto) // 👈 e aqui também
+  @Type(() => SubPackDto) 
   subPacks: SubPackDto[];
 }

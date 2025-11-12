@@ -50,10 +50,14 @@ model Pack {
 }
 
 model SubPack {
-  id        Int        @id @default(autoincrement())
-  packId    Int
-  pack      Pack       @relation(fields: [packId], references: [id], onDelete: Cascade)
-  semaforos Semaforo[]
+  id     Int    @id @default(autoincrement())
+  name   String
+  packId Int
+  pack   Pack   @relation(fields: [packId], references: [id], onDelete: Cascade)
+
+  slotStart    Int
+  slotDuration Int
+  semaforos    Semaforo[]
 }
 
 enum DeviceType {
@@ -66,4 +70,5 @@ model PendingDeletionDevice {
   deviceId  String
   resource  DeviceType
   createdAt DateTime   @default(now())
+  error     String
 }

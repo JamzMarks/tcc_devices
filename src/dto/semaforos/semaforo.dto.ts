@@ -33,4 +33,9 @@ export class SemaforoDto {
 
   @IsOptional()
   subPackId?: number | null;
+
+  @IsInt()
+  slotStart?:    number;
+  @IsInt()
+  slotDuration?: number;
 }

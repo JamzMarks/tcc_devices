@@ -11,9 +11,12 @@ import { DeviceType } from 'generated/prisma';
 import { isValidIP } from '@utils/isValidIP';
 import { SharedAccessSignature } from 'azure-iothub';
 import * as crypto from 'crypto';
+import { UpdateSemaforoDto } from '@dtos/semaforos/update-semafoto.dto';
 @Injectable()
 export class SemaforoService {
   private registry: Registry;
+  private readonly iotHubHostName: string = process.env.IOT_HUB_HOST!;
+
   constructor(private prisma: PrismaService) {
     const connectionString = process.env.AZURE_IOTHUB_CONNECTION_STRING!;
     this.registry = Registry.fromConnectionString(connectionString);
@@ -97,7 +100,7 @@ export class SemaforoService {
     return semaforo;
   }
 
-  async updateSemaforo(id: number, SemaforoDto: Partial<SemaforoDto>) {
+  async updateSemaforo(id: number, SemaforoDto: Partial<UpdateSemaforoDto>) {
     const semaforo = await this.prisma.semaforo.findUnique({ where: { id } });
     if (!semaforo) throw new NotFoundException('Semáforo não encontrado');
 
@@ -110,26 +113,74 @@ export class SemaforoService {
       });
       if (exists) throw new BadRequestException('MAC já está em uso');
     }
-    const { id: semaforoId, createdAt, ...allowedData } = SemaforoDto;
-    return this.prisma.semaforo.update({
+    const updated = this.prisma.semaforo.update({
       where: { id },
-      data: { ...allowedData },
+      data: { ...SemaforoDto, updatedAt: new Date() },
     });
+    return updated;
+  }
+
+  async updateSemaforoDeviceId(id: number, newDeviceId: string) {
+    const semaforo = await this.prisma.semaforo.findUnique({
+      where: { id },
+    });
+    if (!semaforo) {
+      throw new NotFoundException('Semáforo não encontrado');
+    }
+    let azureDevice;
+    try {
+      azureDevice = await this.registry.create({ deviceId: newDeviceId });
+    } catch (err) {
+      throw new BadRequestException(
+        'Erro ao criar novo device no Azure: ' + err.message,
+      );
+    }
+    try {
+      const updatedSemaforo = await this.prisma.$transaction(async (tx) => {
+        const updated = await tx.semaforo.update({
+          where: { id },
+          data: {
+            deviceId: newDeviceId,
+            deviceKey:
+              azureDevice.responseBody.authentication.symmetricKey.primaryKey,
+          },
+        });
+        return updated;
+      });
+
+      await this.registry.delete(semaforo.deviceId);
+
+      return updatedSemaforo;
+    } catch (err) {
+      await this.registry.delete(newDeviceId);
+      throw new BadRequestException(
+        'Erro ao atualizar no banco. Novo device removido do Azure: ' +
+          err.message,
+      );
+    }
   }
 
   async deleteSemaforo(id: number) {
     const semaforo = await this.prisma.semaforo.findUnique({ where: { id } });
-    if (!semaforo) throw new NotFoundException('Semáforo não encontrado');
+    if (!semaforo) {
+      throw new NotFoundException('Semáforo não encontrado');
+    }
 
     await this.prisma.semaforo.delete({ where: { id } });
 
     try {
       await this.registry.delete(semaforo.deviceId);
     } catch (err) {
+      console.error(
+        `Falha ao excluir device ${semaforo.deviceId} do Azure:`,
+        err,
+      );
+
       await this.prisma.pendingDeletionDevice.create({
         data: {
           deviceId: semaforo.deviceId,
           resource: DeviceType.Semaforo,
+          error: err.message,
         },
       });
     }
@@ -142,16 +193,16 @@ export class SemaforoService {
 
     if (!semaforo) throw new NotFoundException('Semáforo não encontrado');
 
-    // Gerar SAS Token válido por 1 hora (ajuste conforme necessário)
     const sasToken = this.generateSasToken(
       process.env.AZURE_IOTHUB_HOSTNAME!,
       semaforo.deviceId,
       semaforo.deviceKey,
-      60 * 60 // 1 hora
+      60 * 60, // 1 hora
     );
 
     return {
       ...semaforo,
+      iotHubHost: this.iotHubHostName,
       sasToken,
     };
   }

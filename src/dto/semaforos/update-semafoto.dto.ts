@@ -5,18 +5,14 @@ export class UpdateSemaforoDto {
   
   @IsString()
   @IsOptional()
-  ip?: string;           
-
+  ip: string;           
+   
   @IsString()
   @IsOptional()
-  deviceKey?: string;      
-
-  @IsString()
-  @IsOptional()
-  macAddress?: string;     
+  macAddress: string;     
 
   @IsOptional()
-  isActive?: boolean;     
+  isActive: boolean;     
 }
 
 
