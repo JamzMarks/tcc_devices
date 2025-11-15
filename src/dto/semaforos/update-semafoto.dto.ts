@@ -1,23 +1,16 @@
 // create-semaforo.dto.ts
 import { IsNumber, IsString, IsOptional } from 'class-validator';
 
-export class UpdateSemaforoDto {
-  
+export class UpdateSemaforoDto {          
   @IsString()
   @IsOptional()
-  ip: string;           
-   
-  @IsString()
-  @IsOptional()
-  macAddress: string;     
-
+  macAddress: string; 
+      
   @IsOptional()
   isActive: boolean;     
 }
 
-
 export class UpdateSemaforoPackDto {
-
   @IsString()
   @IsOptional()
   packId?: number | null;
@@ -25,7 +18,6 @@ export class UpdateSemaforoPackDto {
   @IsNumber()
   @IsOptional()
   subPackId?: number | null;
-
 }
 
 export class UpdateSemaforoDeviceIdDto {

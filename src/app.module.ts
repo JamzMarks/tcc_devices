@@ -13,10 +13,12 @@ import { MqttConnectionService } from './services/mqttConnection.service';
 import { MqttController } from './controllers/mqttConnection.controller';
 import { SchemaController } from '@controllers/schema.controller';
 import { SchemaService } from '@services/schema.service';
+import { Neo4jService } from '@services/neo4j.service';
+import { Neo4jModule } from './neo4j.module';
 
 @Module({
-  imports: [],
+  imports: [Neo4jModule],
   controllers: [CameraController, PackController, SemaforoController, GraphController, MqttController, SchemaController],
-  providers: [SemaforoService, PrismaService, PackService, CameraService, GraphService, MqttConnectionService, SchemaService],
+  providers: [SemaforoService, PrismaService, PackService, CameraService, GraphService, MqttConnectionService, SchemaService, Neo4jService],
 })
 export class AppModule {}

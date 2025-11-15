@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { SemaforoDto } from '@dtos/semaforos/semaforo.dto';
 import { SemaforoService } from 'src/services/semaforo.service';
+import { CreateSemaforoDto } from '@dtos/semaforos/create-semafoto.dto';
 
 @Controller('semaforo')
 export class SemaforoController {
@@ -26,17 +27,13 @@ export class SemaforoController {
   @Get(':id')
   @Version('1')
   getOne(@Param('id') id: string) {
-    return this.semaforoService.getSemaforo(Number(id));
+    return this.semaforoService.getSemaforo(id);
   }
 
   @Post()
   @Version('1')
-  create(@Body() body: { macAddress: string; deviceId: string; ip: string }) {
-    return this.semaforoService.createSemaforo(
-      body.macAddress,
-      body.deviceId,
-      body.ip,
-    );
+  create(@Body() body: CreateSemaforoDto) {
+    return this.semaforoService.createSemaforo(body);
   }
 
   @Put(':id')

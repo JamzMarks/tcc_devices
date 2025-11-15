@@ -1,69 +1,69 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 
 import * as crypto from 'crypto';
-import { PrismaService } from './prisma.service';
 import { MqttCredentialsDto } from '@dtos/mqtt.dto';
+import { SemaforoService } from './semaforo.service';
+import { Neo4jService } from './neo4j.service';
+import { mapNode } from '@utils/formatters/neo4j-formatters';
 
 @Injectable()
 export class MqttConnectionService {
   private readonly apiVersion = '2021-04-12';
   private readonly iotHubHostName: string = process.env.IOT_HUB_HOST!;
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly semaforoService: SemaforoService, private readonly neo4j: Neo4jService) {}
 
   async getMqttCredentialsByMac(macAddress: string): Promise<MqttCredentialsDto> {
-    const semaforo = await this.prisma.semaforo.findUnique({
-      where: { macAddress },
-    });
+    const session = this.neo4j.getReadSession();
 
-    if (!semaforo) throw new NotFoundException('Semáforo não encontrado');
+    try {
+      // Buscar semáforo e seus packs/subpacks
+      const result = await session.run(
+        `
+        MATCH (s:Semaforo { macAddress: $mac })
+        OPTIONAL MATCH (p:Pack)-[:HAS_SEMAFORO]->(s)
+        OPTIONAL MATCH (p)-[:HAS_SUBPACK]->(sp:SubPack)-[:HAS_SEMAFORO]->(s)
+        RETURN s, collect(DISTINCT p) AS packs, collect(DISTINCT sp) AS subPacks
+        `,
+        { mac: macAddress },
+      );
 
-    const pack = await this.prisma.pack.findFirst({
-      where: {
-        OR: [
-          {
-            semaforos: {
-              some: { id: semaforo.id },
-            },
-          },
-          {
-            subPacks: {
-              some: {
-                semaforos: {
-                  some: { id: semaforo.id },
-                },
-              },
-            },
-          },
-        ],
-      },
-      include: {
-        subPacks: {
-          include: {
-            semaforos: true,
-          },
-        },
-        semaforos: true,
-      },
-    });
-
-    const sasToken = this.generateSasToken(
-      process.env.AZURE_IOTHUB_HOSTNAME!,
-      semaforo.deviceId,
-      semaforo.deviceKey,
-      60 * 60,
-    );
-
-    return {
-      ...semaforo,
-      iotHubHost: this.iotHubHostName,
-      sasToken,
-      current_config: {
-        green_start: 0,
-        green_duration: 120,
-        cycle_total: 240,
+      if (!result.records.length) {
+        throw new NotFoundException('Semáforo não encontrado');
       }
-    };
+
+      const record = result.records[0];
+      const s = record.get('s');
+      const packs = record.get('packs');
+      const subPacks = record.get('subPacks');
+
+      const semaforo = mapNode(s);
+
+      const pack = packs.length > 0 ? packs[0].properties : null;
+      const subPack = subPacks.length > 0 ? subPacks[0].properties : null;
+
+      const sasToken = this.generateSasToken(
+        process.env.AZURE_IOTHUB_HOSTNAME!,
+        semaforo.deviceId,
+        semaforo.deviceKey,
+        60 * 60,
+      );
+
+      return {
+        ...semaforo,
+        iotHubHost: this.iotHubHostName,
+        sasToken,
+        current_config: {
+          green_start: 0,
+          green_duration: 120,
+          cycle_total: 240,
+        },
+        pack: pack ? { ...pack, subPacks } : null,
+      };
+    } finally {
+      await session.close();
+    }
   }
+  
   private generateSasToken(
     iotHubHostName: string,
     deviceId: string,

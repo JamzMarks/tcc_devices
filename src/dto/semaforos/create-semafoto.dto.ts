@@ -9,8 +9,4 @@ export class CreateSemaforoDto {
   @IsString()
   @IsNotEmpty()
   deviceId: string;
-
-  @IsString()
-  @IsNotEmpty()
-  ip: string;
 }

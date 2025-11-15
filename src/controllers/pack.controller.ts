@@ -14,11 +14,12 @@ export class PackController {
 
   @Get(':id')
   getOne(@Param('id') id: string) {
-    return this.packService.getPack(Number(id));
+    return this.packService.getPack(id);
   }
 
   @Post()
   create(@Body() body: PackDto) {
+    console.log(body);
     return this.packService.createPack(body);
   }
 
@@ -32,38 +33,7 @@ export class PackController {
 
   @Delete(':id')
   delete(@Param('id') id: string) {
-    return this.packService.deletePack(Number(id));
-
-  }
-
-  @Get("subpack")
-  getAllSubPacks() {
-    return this.packService.getAllPacks();
-  }
-
-  // ----SubPacks----
-
-  @Get('subpack/:id')
-  getOneSubPack(@Param('id') id: string) {
-    return this.packService.getSubPack(Number(id));
-  }
-
-  @Post("subpack")
-  createSubPack(@Body() body: { packId: number; semaforosIds: [] }) {
-    return this.packService.createSubPack(body.semaforosIds, body.packId);
-  }
-
-  // @Put('subpack/:id')
-  // updateSubPack(
-  //   @Param('id') id: string,
-  //   @Body() body: { node?: string; semaforos?: number[] },
-  // ) {
-  //   return this.packService.updateSubPack(Number(id), body.node, body.semaforos);
-  // }
-
-  @Delete('subpack/:id')
-  deleteSubPacks(@Param('id') id: string) {
-    return this.packService.deleteSubPack(Number(id));
+    return this.packService.deletePack(id);
   }
 
 }
