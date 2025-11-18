@@ -106,19 +106,6 @@ export class GraphController {
     }
   }
 
-  @Post('nodes/:id/semaforo')
-  async createSemaforoOnNode(@Param('id') id: string, @Body() body: {semaforoData: SemaforoDto, wayId: string}, @Res() res: Response) {
-    try {
-      const data = await this.graphService.createSemaforoOnNode(id, body.semaforoData, body.wayId);
-      return res.status(HttpStatus.OK).json(data);
-    } catch (err) {
-      console.error(err);
-      return res
-        .status(500)
-        .json({ message: 'Erro exportando grafo', error: err.message });
-    }
-  }
-
   @Post('devices')
   async createDevice(@Body() body: {
     deviceData: DeviceGraphDto, 

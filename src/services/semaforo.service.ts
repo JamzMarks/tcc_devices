@@ -10,7 +10,7 @@ import { SemaforoFilters } from '@dtos/semaforos/semaforo-filters.dto';
 import { DeviceType } from 'generated/prisma';
 import { UpdateSemaforoDto } from '@dtos/semaforos/update-semafoto.dto';
 import { CreateSemaforoDto } from '@dtos/semaforos/create-semafoto.dto';
-import { mapNode } from '@utils/formatters/neo4j-formatters';
+import { mapNode, safeMapNode } from '@utils/formatters/neo4j-formatters';
 import { SemaforoInfoDto } from '@dtos/semaforos/semaforo-info.dto';
 import { Neo4jService } from './neo4j.service';
 import neo4j from 'neo4j-driver';
@@ -192,36 +192,6 @@ export class SemaforoService {
     }
   }
 
-  async getSemaforo(id: string): Promise<SemaforoInfoDto> {
-    const session = this.neo4jService.getReadSession();
-    const result = await session.run(
-      `
-      MATCH (s:Semaforo)
-      WHERE elementId(s) = $id
-
-      OPTIONAL MATCH (s)-[:CONTROLS_TRAFFIC_ON]->(w:OSMWay)
-      OPTIONAL MATCH (n:OSMNode)-[:HAS_SEMAFORO]->(s)
-
-      RETURN s, collect(DISTINCT w) AS ways, collect(DISTINCT n) AS nodes
-      `,
-      { id },
-    );
-
-    if (result.records.length === 0) {
-      throw new NotFoundException('Semáforo não encontrado');
-    }
-
-    await session.close();
-    const record = result.records[0];
-    const semaforo = mapNode(record.get('s'));
-
-    return {
-      semaforo,
-      // ways: record.get("ways").map(w => w.properties),
-      // nodes: record.get("nodes").map(n => n.properties),
-    };
-  }
-
   async updateSemaforo(id: number, SemaforoDto: Partial<UpdateSemaforoDto>) {
     const semaforo = await this.prisma.semaforo.findUnique({ where: { id } });
     if (!semaforo) throw new NotFoundException('Semáforo não encontrado');
@@ -329,5 +299,154 @@ export class SemaforoService {
     return semaforo;
   }
 
-  
+  async linkSemaforo(nodeId: string, deviceId: string, wayId: string) {
+    const session = this.neo4jService.getWriteSession();
+
+    try {
+      const semaforoNode = await session.writeTransaction(async (tx) => {
+        // Primeiro, garante que o nó e o semáforo existem
+        const nodeResult = await tx.run(
+          `MATCH (n:OSMNode) WHERE elementId(n) = $nodeId RETURN n`,
+          { nodeId },
+        );
+        if (nodeResult.records.length === 0) {
+          throw new Error('Nó não encontrado');
+        }
+
+        const semaforoResult = await tx.run(
+          `MATCH (s:Semaforo {deviceId: $deviceId}) RETURN s`,
+          { deviceId },
+        );
+        if (semaforoResult.records.length === 0) {
+          throw new Error('Semáforo não encontrado');
+        }
+
+        // Linka o semáforo ao OSMNode caso ainda não exista
+        await tx.run(
+          `
+        MATCH (s:Semaforo {deviceId: $deviceId}), (n:OSMNode)
+        WHERE elementId(n) = $nodeId
+        MERGE (s)-[r:LOCATED_AT]->(n)
+        RETURN r
+        `,
+          { deviceId, nodeId },
+        );
+
+        // Linka o semáforo à OSMWay caso ainda não exista
+        if (wayId) {
+          await tx.run(
+            `
+          MATCH (s:Semaforo {deviceId: $deviceId}), (w:OSMWay)
+          WHERE elementId(w) = $wayId
+          MERGE (s)-[r:CONTROLS_TRAFFIC_ON]->(w)
+          RETURN r
+          `,
+            { deviceId, wayId },
+          );
+        }
+
+        return semaforoResult.records[0].get('s');
+      });
+
+      return semaforoNode;
+    } catch (error) {
+      console.error('Erro ao vincular semáforo:', error);
+      throw error;
+    } finally {
+      await session.close();
+    }
+  }
+  async unLinkSemaforo(deviceId: string) {
+    const session = this.neo4jService.getWriteSession();
+
+    try {
+      const result = await session.writeTransaction(async (tx) => {
+        // Verifica se o semáforo existe
+        const semaforoResult = await tx.run(
+          `MATCH (s:Semaforo {deviceId: $deviceId}) RETURN s`,
+          { deviceId },
+        );
+
+        if (semaforoResult.records.length === 0) {
+          throw new Error('Semáforo não encontrado');
+        }
+
+        await tx.run(
+          `
+        MATCH (s:Semaforo {deviceId: $deviceId})-[r:LOCATED_AT]->(n:OSMNode)
+        DELETE r
+        `,
+          { deviceId },
+        );
+
+        // Remove a relação CONTROLS_TRAFFIC_ON se existir
+        await tx.run(
+          `
+        MATCH (s:Semaforo {deviceId: $deviceId})-[r:CONTROLS_TRAFFIC_ON]->(w:OSMWay)
+        DELETE r
+        `,
+          { deviceId },
+        );
+
+        return semaforoResult.records[0].get('s');
+      });
+
+      return result;
+    } catch (error) {
+      console.error('Erro ao desvincular semáforo:', error);
+      throw error;
+    } finally {
+      await session.close();
+    }
+  }
+
+  async getSemaforo(id: string): Promise<SemaforoInfoDto> {
+    const session = this.neo4jService.getReadSession();
+
+    try {
+      const result = await session.run(
+        `
+      MATCH (s:Semaforo)
+      WHERE elementId(s) = $id
+
+      OPTIONAL MATCH (s)-[:LOCATED_AT]->(n:OSMNode)
+
+      OPTIONAL MATCH (s)-[:CONTROLS_TRAFFIC_ON]->(w:OSMWay)
+
+      OPTIONAL MATCH (p:Pack)-[:HAS_SUBPACK*0..]->(sp)
+      WHERE (p)-[:HAS_SEMAFORO]->(s) OR (sp)-[:HAS_SEMAFORO]->(s)
+
+      RETURN s, n, w, p, sp
+      `,
+        { id },
+      );
+
+      if (result.records.length === 0) {
+        throw new NotFoundException('Semáforo não encontrado');
+      }
+
+      const record = result.records[0];
+      const semaforo = safeMapNode(record.get('s'));
+      const node = safeMapNode(record.get('n'));
+      const pack = safeMapNode(record.get('p'));
+      const subPacks = safeMapNode(record.get('sp'));
+      const ways = safeMapNode(record.get('w'));
+
+      return {
+        semaforo,
+        nodes: {
+          ...node,
+        },
+        ways: {
+          ...ways,
+        },
+        packs: {
+          ...pack,
+          subPacks,
+        },
+      };
+    } finally {
+      await session.close();
+    }
+  }
 }

@@ -15,9 +15,12 @@ import { SchemaController } from '@controllers/schema.controller';
 import { SchemaService } from '@services/schema.service';
 import { Neo4jService } from '@services/neo4j.service';
 import { Neo4jModule } from './neo4j.module';
+import { RabbitMQModule } from './rabbit.module';
+
+import { WebSocketModule } from './webSocket.module';
 
 @Module({
-  imports: [Neo4jModule],
+  imports: [Neo4jModule, RabbitMQModule, WebSocketModule],
   controllers: [CameraController, PackController, SemaforoController, GraphController, MqttController, SchemaController],
   providers: [SemaforoService, PrismaService, PackService, CameraService, GraphService, MqttConnectionService, SchemaService, Neo4jService],
 })

@@ -323,71 +323,7 @@ export class GraphService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async createSemaforoOnNode(
-    nodeId: string,
-    semaforoData: SemaforoDto,
-    wayId: string,
-  ) {
-    const session = this.session(true);
-    try {
-      const semaforoNode = await session.writeTransaction(async (tx) => {
-        const nodeCheck = await tx.run(
-          `MATCH (n:OSMNode) WHERE elementId(n) = $nodeId RETURN n`,
-          { nodeId },
-        );
-
-        if (nodeCheck.records.length === 0) {
-          throw new Error('Nó não encontrado');
-        }
-
-        const checkSemaforo = await tx.run(
-          `MATCH (n:Semaforo {deviceId: $deviceId}) RETURN n`,
-          { deviceId: semaforoData.deviceId },
-        );
-
-        if (checkSemaforo.records.length > 0) {
-          throw new Error('DeviceId already in use');
-        }
-
-        const cleanSemaforoData = Object.fromEntries(
-          Object.entries(semaforoData).filter(
-            ([key, value]) =>
-              value !== undefined &&
-              !['createdAt', 'updatedAt', 'ip', 'macAddress'].includes(key),
-          ),
-        );
-
-        const result = await tx.run(
-          `
-        MATCH (n:OSMNode) WHERE elementId(n) = $nodeId
-        MERGE (s:Semaforo {deviceId: $deviceId})
-        SET s += $cleanSemaforoData
-        MERGE (n)-[:HAS_SEMAFORO]->(s)
-        WITH s
-        OPTIONAL MATCH (w:OSMWay ) WHERE elementId(w) = $wayId
-        MERGE (s)-[:CONTROLS_TRAFFIC_ON]->(w)
-        RETURN s, w
-        `,
-          { nodeId, deviceId: semaforoData.deviceId, cleanSemaforoData, wayId },
-        );
-        await tx.commit();
-        const semaforo = result.records[0]?.get('s');
-        if (!semaforo) {
-          throw new Error('Erro ao criar ou vincular semáforo');
-        }
-
-        return semaforo;
-      });
-
-      return semaforoNode;
-    } catch (error) {
-      console.error('Erro ao criar semáforo:', error);
-      throw error;
-    } finally {
-      await session.close();
-    }
-  }
-
+  
   async createDevice(
     nodeId1: string,
     nodeId2: string,

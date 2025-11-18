@@ -40,3 +40,7 @@ export function neo4jDateTimeToISO(dt): string | null {
 
   return new Date(Date.UTC(y, m - 1, d, h, min, s)).toISOString();
 }
+
+export function safeMapNode(node: any) {
+  return node ? mapNode(node) : null;
+}

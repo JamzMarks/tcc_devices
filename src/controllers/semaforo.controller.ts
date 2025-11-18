@@ -9,6 +9,7 @@ import {
   Body,
   Query,
   Version,
+  Res,
 } from '@nestjs/common';
 import { SemaforoDto } from '@dtos/semaforos/semaforo.dto';
 import { SemaforoService } from 'src/services/semaforo.service';
@@ -51,5 +52,32 @@ export class SemaforoController {
   @Version('1')
   getByMac(@Param('macAddress') macAddress: string) {
     return this.semaforoService.getByMacAdress(macAddress);
+  }
+
+  @Post(':id/link')
+  @Version('1')
+  async linkSemaforoToNode(
+    @Param('id') deviceId: string,
+    @Body() body: { nodeId: string; wayId: string },
+  ) {
+    const { nodeId, wayId } = body;
+
+    const semaforo = await this.semaforoService.linkSemaforo(
+      nodeId,
+      deviceId,
+      wayId,
+    );
+    return semaforo;
+  }
+
+  @Post(':id/unlink')
+  @Version('1')
+  async unlinkSemaforo(
+    @Param('id') deviceId: string
+  ) {
+    const semaforo = await this.semaforoService.unLinkSemaforo(
+      deviceId,
+    );
+    return semaforo;
   }
 }
