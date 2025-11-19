@@ -4,14 +4,12 @@ import {
   BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from './prisma.service';
 import { PackDto } from '@dtos/pack/pack.dto';
 import { Neo4jService } from './neo4j.service';
 
 @Injectable()
 export class PackService {
   constructor(
-    private prisma: PrismaService,
     private readonly semaforoService: SemaforoService,
     private readonly neo4j: Neo4jService,
   ) {}
@@ -196,30 +194,30 @@ export class PackService {
     }
   }
 
-  async updatePack(id: number, semaforoIds?: number[]) {
-    const pack = await this.prisma.pack.findUnique({ where: { id } });
-    if (!pack) throw new NotFoundException('Pack não encontrado');
+  // async updatePack(id: number, semaforoIds?: number[]) {
+  //   const pack = await this.prisma.pack.findUnique({ where: { id } });
+  //   if (!pack) throw new NotFoundException('Pack não encontrado');
 
-    if (semaforoIds && semaforoIds.length < 2) {
-      throw new BadRequestException(
-        'Um pack precisa de pelo menos 2 semáforos.',
-      );
-    }
+  //   if (semaforoIds && semaforoIds.length < 2) {
+  //     throw new BadRequestException(
+  //       'Um pack precisa de pelo menos 2 semáforos.',
+  //     );
+  //   }
 
-    return this.prisma.pack.update({
-      where: { id },
-      data: {
-        ...(semaforoIds
-          ? {
-              semaforos: {
-                set: semaforoIds.map((id) => ({ id })),
-              },
-            }
-          : {}),
-      },
-      include: { semaforos: true },
-    });
-  }
+  //   return this.prisma.pack.update({
+  //     where: { id },
+  //     data: {
+  //       ...(semaforoIds
+  //         ? {
+  //             semaforos: {
+  //               set: semaforoIds.map((id) => ({ id })),
+  //             },
+  //           }
+  //         : {}),
+  //     },
+  //     include: { semaforos: true },
+  //   });
+  // }
 
   async deletePack(packId: string) {
     const session = this.neo4j.getWriteSession();

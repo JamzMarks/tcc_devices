@@ -14,10 +14,10 @@ import { MqttController } from './controllers/mqttConnection.controller';
 import { SchemaController } from '@controllers/schema.controller';
 import { SchemaService } from '@services/schema.service';
 import { Neo4jService } from '@services/neo4j.service';
-import { Neo4jModule } from './neo4j.module';
-import { RabbitMQModule } from './rabbit.module';
+import { WebSocketModule } from '@Modules/webSocket.module';
+import { RabbitMQModule } from '@Modules/rabbit.module';
+import { Neo4jModule } from '@Modules/neo4j.module';
 
-import { WebSocketModule } from './webSocket.module';
 
 @Module({
   imports: [Neo4jModule, RabbitMQModule, WebSocketModule],

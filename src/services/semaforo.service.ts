@@ -321,7 +321,7 @@ export class SemaforoService {
           throw new Error('Semáforo não encontrado');
         }
 
-        // Linka o semáforo ao OSMNode caso ainda não exista
+        // Linka o semáforo ao OSMNode 
         await tx.run(
           `
         MATCH (s:Semaforo {deviceId: $deviceId}), (n:OSMNode)
@@ -332,7 +332,7 @@ export class SemaforoService {
           { deviceId, nodeId },
         );
 
-        // Linka o semáforo à OSMWay caso ainda não exista
+        // Linka o semáforo à OSMWay 
         if (wayId) {
           await tx.run(
             `

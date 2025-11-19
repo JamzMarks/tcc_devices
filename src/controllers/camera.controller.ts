@@ -16,7 +16,7 @@ export class CameraController {
   @Get(':id')
   @Version('1')
   getOne(@Param('id') id: string) {
-    return this.cameraService.getCamera(Number(id));
+    return this.cameraService.getCamera(id);
   }
 
   @Post()
@@ -42,6 +42,6 @@ export class CameraController {
   @Delete(':id')
   @Version('1')
   delete(@Param('id') id: string) {
-    return this.cameraService.deleteCamera(Number(id));
+    return this.cameraService.deleteCamera(id);
   }
 }

@@ -22,6 +22,7 @@ export class WebSocketService {
   async getListeners(semaforoId: string): Promise<Set<string>> {
     return this.listeners.get(semaforoId) || new Set();
   }
+  
 
   async removeSocketFromAll(socketId: string) {
     this.listeners.forEach((set) => set.delete(socketId));

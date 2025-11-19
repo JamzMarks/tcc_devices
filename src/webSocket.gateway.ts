@@ -43,7 +43,10 @@ export class WebSocketGatewayMain
   async emitStatusUpdate(semaforoId: string, status: any) {
     const sockets = await this.wsService.getListeners(semaforoId);
     for (const socketId of sockets) {
-      this.server.to(socketId).emit('statusUpdate', { semaforoId, status });
+      this.server.to(socketId).emit('statusUpdate', { 
+        semaforoId, 
+        status 
+      });
     }
   }
 }
