@@ -5,9 +5,9 @@ import {
   IsInt,
   ValidateNested,
   IsArray,
+  ArrayNotEmpty,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { SemaforoDto } from '@dtos/semaforos/semaforo.dto';
 
 export class PackConfigDto {
   @IsInt()
@@ -24,10 +24,19 @@ export class SubPackDto {
   @IsInt()
   packId?: number;
 
+  @IsString()
+  name: string;
+
+  @IsInt()
+  slotStart: number;
+
+  @IsInt()
+  slotDuration: number;
+
   @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => SemaforoDto) 
-  semaforos: SemaforoDto[];
+  @ArrayNotEmpty()
+  @IsString({ each: true })
+  semaforos: string[];
 }
 
 export class PackDto {
@@ -44,12 +53,11 @@ export class PackDto {
   configs: PackConfigDto;
 
   @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => SemaforoDto) // 👈 idem aqui
-  semaforos: SemaforoDto[];
+  @IsString({ each: true }) 
+  semaforos: string[];
 
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => SubPackDto) // 👈 e aqui também
+  @Type(() => SubPackDto)
   subPacks: SubPackDto[];
 }

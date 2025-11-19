@@ -4,16 +4,13 @@ export class SemaforoDto {
   @IsOptional()
   @IsInt()
   @IsPositive()
-  id?: number;
+  id: string;
 
   @IsString()
   macAddress: string;
 
   @IsString()
   deviceId: string;
-
-  @IsString()
-  ip: string;
 
   @IsString()
   deviceKey: string;
@@ -33,4 +30,22 @@ export class SemaforoDto {
 
   @IsOptional()
   subPackId?: number | null;
+
+  @IsInt()
+  slotStart?: number;
+
+  @IsInt()
+  slotDuration?: number;
 }
+
+// (:Semaforo {
+//   id: <int>,
+//   macAddress: <string>,
+//   deviceId: <string>,
+//   deviceKey: <string>,
+//   isActive: <boolean>,
+//   slotStart: <int>,
+//   slotDuration: <int>,
+//   createdAt: <datetime>,
+//   updatedAt: <datetime>
+// })
