@@ -1,12 +1,41 @@
-export interface SemaforoDto {
-  id?: number;
+import { IsOptional, IsString, IsBoolean, IsInt, IsPositive } from 'class-validator';
+
+export class SemaforoDto {
+  @IsOptional()
+  @IsInt()
+  @IsPositive()
+  id: string;
+
+  @IsString()
   macAddress: string;
+
+  @IsString()
   deviceId: string;
-  ip: string,
-  deviceKey: string,
+
+  @IsString()
+  deviceKey: string;
+
+  @IsOptional()
+  @IsBoolean()
   isActive?: boolean;
-  createdAt?: Date; 
+
+  @IsOptional()
+  createdAt?: Date;
+
+  @IsOptional()
   updatedAt?: Date;
+
+  @IsOptional()
   packId?: number | null;
+
+  @IsOptional()
   subPackId?: number | null;
+
+  @IsInt()
+  slotStart?: number;
+
+  @IsInt()
+  slotDuration?: number;
 }
+
+

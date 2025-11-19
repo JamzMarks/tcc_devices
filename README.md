@@ -97,12 +97,4 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
 
-DATABASE_URL=postgresql://postgres:LRjmz0622@@db.haincblhbtjubwqexxyr.supabase.co:5432/postgres
-NEO4J_URI=neo4j://127.0.0.1:7687
-NEO4J_USERNAME=neo4j
-NEO4J_PASSWORD=senha123
-# 87764eb0
-# 0M-3jA_MghF5MwNgfxGczE6xXOZ1w00hbuDpe6oMOcE
-AZURE_IOTHUB_CONNECTION_STRING="HostName=tcc-traffic-light.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey=X7/ryQDOcz6G7CKof7W0fhfz8PelMrhMxAIoTA7H80U="
-IOT_HUB_HOST="tcc-traffic-light.azure-devices.net"
-API_VERSION_AZURE="2021-04-12";
+

@@ -6,11 +6,11 @@ import { ValidationPipe, VersioningType } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.enableCors({
-    origin: ['https://localhost:3000', 'https://tccdashboard.vercel.app/'],
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    credentials: true,
-  });
+  // app.enableCors({
+  //   origin: ['https://localhost:3000', 'https://tccdashboard.vercel.app', 'https://tailfox.vercel.app'],
+  //   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+  //   credentials: true,
+  // });
   const config = new DocumentBuilder()
     .setTitle('API Devices')
     .setDescription('Documentação das APIs de Semáforo, Pack e Câmera')

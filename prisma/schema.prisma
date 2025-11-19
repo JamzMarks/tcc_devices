@@ -32,7 +32,7 @@ model Semaforo {
 
 model Camera {
   id         Int      @id @default(autoincrement())
-  macAddress String   
+  macAddress String
   ip         String
   deviceKey  String
   deviceId   String   @unique
@@ -43,16 +43,21 @@ model Camera {
 
 model Pack {
   id        Int        @id @default(autoincrement())
-  node      String
+  name      String
+  cicle     Int
   semaforos Semaforo[]
   subPacks  SubPack[]
 }
 
 model SubPack {
-  id        Int        @id @default(autoincrement())
-  packId    Int
-  pack      Pack       @relation(fields: [packId], references: [id], onDelete: Cascade)
-  semaforos Semaforo[]
+  id     Int    @id @default(autoincrement())
+  name   String
+  packId Int
+  pack   Pack   @relation(fields: [packId], references: [id], onDelete: Cascade)
+
+  slotStart    Int
+  slotDuration Int
+  semaforos    Semaforo[]
 }
 
 enum DeviceType {
@@ -65,4 +70,5 @@ model PendingDeletionDevice {
   deviceId  String
   resource  DeviceType
   createdAt DateTime   @default(now())
+  error     String
 }
