@@ -34,6 +34,19 @@ export class GraphController {
     }
   }
 
+  @Get('full-graph2')
+  async exportGraph2(@Res() res: Response) {
+    try {
+      const data = await this.graphService.exportGraphForBuild2();
+      return res.status(HttpStatus.OK).json(data);
+    } catch (err) {
+      console.error(err);
+      return res
+        .status(500)
+        .json({ message: 'Erro exportando grafo', error: err.message });
+    }
+  }
+
   @Post('clear/:wayId')
   async clearWayNodes(@Param('wayId') wayId: string, @Res() res: Response){
     try {

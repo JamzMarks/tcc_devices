@@ -10,8 +10,10 @@ import {
 import { WebSocketService } from '@services/webSocket.service';
 import { Server, Socket } from 'socket.io';
 
-
-@WebSocketGateway(3010, {})
+@WebSocketGateway({ cors: true,
+  pingInterval: 30000, 
+  pingTimeout: 20000,  
+})
 export class WebSocketGatewayMain
   implements OnGatewayConnection, OnGatewayDisconnect
 {
@@ -33,20 +35,31 @@ export class WebSocketGatewayMain
   @SubscribeMessage('listen')
   async handleListen(
     @ConnectedSocket() client: Socket,
-    @MessageBody() payload: { semaforoId: string },
+    @MessageBody() payload: { deviceId: string },
   ) {
-    console.log(`Cliente ${client.id} quer ouvir semáforo ${payload.semaforoId}`);
-    await this.wsService.addListener(payload.semaforoId, client.id);
+    console.log(
+      `Cliente ${client.id} quer ouvir semáforo ${payload.deviceId}`,
+    );
+    await this.wsService.addListener(payload.deviceId, client.id);
   }
 
   // Função para enviar atualização de status para clientes
-  async emitStatusUpdate(semaforoId: string, status: any) {
-    const sockets = await this.wsService.getListeners(semaforoId);
+  async emitStatusUpdate(msg: any) {
+    const { deviceId } = msg;
+
+    const sockets = await this.wsService.getListeners(deviceId);
+
+    console.log(`🔔 Emitindo status para ${sockets.size} clientes`);
+
     for (const socketId of sockets) {
-      this.server.to(socketId).emit('statusUpdate', { 
-        semaforoId, 
-        status 
-      });
+      const socket = this.server.sockets.sockets.get(socketId);
+
+      if (socket) {
+        socket.emit('statusUpdate', msg); // 🔥 envia a mensagem inteira
+      } else {
+        // Remove sockets invalidados
+        await this.wsService.removeSocketFromAll(socketId);
+      }
     }
   }
 }

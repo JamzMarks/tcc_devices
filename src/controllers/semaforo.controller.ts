@@ -54,10 +54,10 @@ export class SemaforoController {
     return this.semaforoService.getByMacAdress(macAddress);
   }
 
-  @Post(':id/link')
+  @Post(':deviceId/link')
   @Version('1')
   async linkSemaforoToNode(
-    @Param('id') deviceId: string,
+    @Param('deviceId') deviceId: string,
     @Body() body: { nodeId: string; wayId: string },
   ) {
     const { nodeId, wayId } = body;

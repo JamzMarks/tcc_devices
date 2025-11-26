@@ -21,23 +21,23 @@ export class CameraController {
 
   @Post()
   @Version('1')
-  create(@Body() body: { macAddress: string; deviceId: string, ip: string}) {
-    return this.cameraService.createCamera(body.macAddress, body.deviceId, body.ip);
+  create(@Body() body: { deviceId: string, ip: string, nodeA: string, nodeB: string}) {
+    return this.cameraService.createCamera(body);
   }
 
-  @Put(':id')
-  @Version('1')
-  update(
-    @Param('id') id: string,
-    @Body() body: { macAddress?: string; deviceId?: string; isActive?: boolean },
-  ) {
-    return this.cameraService.updateCamera(
-      Number(id),
-      body.macAddress,
-      body.deviceId,
-      body.isActive,
-    );
-  }
+  // @Put(':id')
+  // @Version('1')
+  // update(
+  //   @Param('id') id: string,
+  //   @Body() body: { macAddress?: string; deviceId?: string; isActive?: boolean },
+  // ) {
+  //   return this.cameraService.updateCamera(
+  //     Number(id),
+  //     body.macAddress,
+  //     body.deviceId,
+  //     body.isActive,
+  //   );
+  // }
 
   @Delete(':id')
   @Version('1')

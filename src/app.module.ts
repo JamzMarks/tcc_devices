@@ -17,10 +17,11 @@ import { Neo4jService } from '@services/neo4j.service';
 import { WebSocketModule } from '@Modules/webSocket.module';
 import { RabbitMQModule } from '@Modules/rabbit.module';
 import { Neo4jModule } from '@Modules/neo4j.module';
+import { IoTHubModule } from '@Modules/iot-hub.module';
 
 
 @Module({
-  imports: [Neo4jModule, RabbitMQModule, WebSocketModule],
+  imports: [Neo4jModule, RabbitMQModule, WebSocketModule, IoTHubModule],
   controllers: [CameraController, PackController, SemaforoController, GraphController, MqttController, SchemaController],
   providers: [SemaforoService, PrismaService, PackService, CameraService, GraphService, MqttConnectionService, SchemaService, Neo4jService],
 })

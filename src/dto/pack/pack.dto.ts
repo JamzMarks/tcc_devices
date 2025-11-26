@@ -6,6 +6,7 @@ import {
   ValidateNested,
   IsArray,
   ArrayNotEmpty,
+  Min,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -13,6 +14,21 @@ export class PackConfigDto {
   @IsInt()
   @IsPositive()
   cicle: number;
+}
+export class SemaforoPackDto {
+  @IsString()
+  id: string;
+
+  @IsString()
+  deviceId: string;
+
+  @IsInt()
+  @Min(0)
+  green_duration: number;
+
+  @IsInt()
+  @Min(0)
+  green_start: number;
 }
 
 export class SubPackDto {
@@ -28,15 +44,16 @@ export class SubPackDto {
   name: string;
 
   @IsInt()
-  slotStart: number;
+  green_start: number;
 
   @IsInt()
-  slotDuration: number;
+  green_duration: number;
 
   @IsArray()
   @ArrayNotEmpty()
-  @IsString({ each: true })
-  semaforos: string[];
+  @ValidateNested({ each: true })
+  @Type(() => SemaforoPackDto)
+  semaforos: SemaforoPackDto[];
 }
 
 export class PackDto {
@@ -53,11 +70,14 @@ export class PackDto {
   configs: PackConfigDto;
 
   @IsArray()
-  @IsString({ each: true }) 
-  semaforos: string[];
+  @ValidateNested({ each: true })
+  @Type(() => SemaforoPackDto)
+  semaforos: SemaforoPackDto[];
 
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => SubPackDto)
   subPacks: SubPackDto[];
 }
+
+
