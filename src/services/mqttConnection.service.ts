@@ -83,6 +83,13 @@ export class MqttConnectionService {
     )}&sig=${encodeURIComponent(signature)}&se=${expiry}`;
   }
 
+  public getServerTime() {
+    return {
+      epoch_ms: Date.now(),      
+      epoch_s: Math.floor(Date.now() / 1000),
+      iso: new Date().toISOString(),
+    };
+  }
   // async mockSemaforos(){
   //   const base = 60;
   //   const variation = Math.floor(Math.random() * 30);

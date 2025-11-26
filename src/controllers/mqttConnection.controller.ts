@@ -10,4 +10,9 @@ export class MqttController {
   async getCredentials(@Query("mac") mac: string) {
     return this.mqttService.getMqttCredentialsByMac(mac);
   }
+
+  @Get("time")
+  async getServerTime() {
+    return this.mqttService.getServerTime();
+  }
 }
