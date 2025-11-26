@@ -1,4 +1,4 @@
-import { Session } from 'neo4j-driver';
+import { Session, Transaction } from 'neo4j-driver';
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
 import { Neo4jService } from './neo4j.service';
@@ -68,8 +68,21 @@ export class CameraService {
   async getAllCameras() {
     const session = this.neo4jService.getReadSession();
     try {
-      const result = await session.run(`MATCH (c:Camera) RETURN c`);
-      return result.records.map((r) => r.get('c').properties);
+      const result = await session.run(`MATCH (c:Device) RETURN c`);
+
+      return result.records.map((r) => {
+        const props = r.get('c').properties;
+
+        // Converte updatedAt se for DateTime
+        if (props.updatedAt && typeof props.updatedAt.toString === 'function') {
+          props.updatedAt = props.updatedAt.toString(); 
+        }
+        if (props.createdAt && typeof props.createdAt.toString === 'function') {
+          props.createdAt = props.createdAt.toString(); 
+        }
+
+        return props;
+      });
     } catch (error) {
       throw error;
     } finally {
@@ -91,7 +104,7 @@ export class CameraService {
       );
 
       if (result.records.length === 0) {
-        throw new NotFoundException('Camera não encontrada');
+        throw new NotFoundException('Device não encontrada');
       }
 
       return result.records[0].get('c').properties;
@@ -105,25 +118,25 @@ export class CameraService {
     }
   }
 
-  async updateCamera(id: number, macAddress?: string, deviceId?: string, isActive?: boolean) {
-    const camera = await this.prisma.camera.findUnique({ where: { id } });
-    if (!camera) throw new NotFoundException('Camera não encontrada');
+  // async updateCamera(id: number, macAddress?: string, deviceId?: string, isActive?: boolean) {
+  //   const camera = await this.prisma.camera.findUnique({ where: { id } });
+  //   if (!camera) throw new NotFoundException('Camera não encontrada');
 
-    // Se atualizar MAC, verificar duplicidade
-    if (macAddress && macAddress !== camera.macAddress) {
-      const exists = await this.prisma.camera.findFirst({ where: { macAddress } });
-      if (exists) throw new BadRequestException('MAC já está em uso');
-    }
+  //   // Se atualizar MAC, verificar duplicidade
+  //   if (macAddress && macAddress !== camera.macAddress) {
+  //     const exists = await this.prisma.camera.findFirst({ where: { macAddress } });
+  //     if (exists) throw new BadRequestException('MAC já está em uso');
+  //   }
 
-    return this.prisma.camera.update({
-      where: { id },
-      data: {
-        macAddress,
-        deviceId,
-        isActive,
-      },
-    });
-  }
+  //   return this.prisma.camera.update({
+  //     where: { id },
+  //     data: {
+  //       macAddress,
+  //       deviceId,
+  //       isActive,
+  //     },
+  //   });
+  // }
   
   async deleteCamera(id: string): Promise<void> {
     await this.getCamera(id);

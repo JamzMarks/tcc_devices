@@ -38,14 +38,4 @@ export class SemaforoDto {
   slotDuration?: number;
 }
 
-// (:Semaforo {
-//   id: <int>,
-//   macAddress: <string>,
-//   deviceId: <string>,
-//   deviceKey: <string>,
-//   isActive: <boolean>,
-//   slotStart: <int>,
-//   slotDuration: <int>,
-//   createdAt: <datetime>,
-//   updatedAt: <datetime>
-// })
+

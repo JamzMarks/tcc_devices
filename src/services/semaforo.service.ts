@@ -449,4 +449,5 @@ export class SemaforoService {
       await session.close();
     }
   }
+
 }

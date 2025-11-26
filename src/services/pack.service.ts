@@ -16,7 +16,7 @@ export class PackService {
 
   async createPack(data: PackDto) {
     const { name, semaforos, subPacks, configs } = data;
-
+    console.log(data)
     if (
       (!semaforos || semaforos.length === 0) &&
       (!subPacks || subPacks.length === 0)
@@ -40,25 +40,32 @@ export class PackService {
       );
 
       const packId = packResult.records[0].get('packElementId');
-
+      
       // Conectar semáforos ao Pack
       if (semaforos.length > 0) {
-        const existing = await this.semaforoService.findManyByIds(semaforos);
+        const semaforosIdsFind = semaforos.map((s) => s.id);
+        const existing = await this.semaforoService.findManyByIds(semaforosIdsFind);
         if (existing.length !== semaforos.length) {
           throw new BadRequestException(
             'Um ou mais semáforos informados não existem.',
           );
         }
+       
         await tx.run(
           `
-          MATCH (p:Pack)
-          WHERE elementId(p) = $packId
-          UNWIND $semaforosIds AS sid
-          MATCH (s:Semaforo)
-          WHERE elementId(s) = sid
+          MATCH (p:Pack) WHERE elementId(p) = $packId
+          UNWIND $list AS item
+          MATCH (s:Semaforo) WHERE elementId(s) = item.id
+          SET s.green_start = item.green_start,
+              s.green_duration = item.green_duration
           MERGE (p)-[:HAS_SEMAFORO]->(s)
           `,
-          { packId, semaforosIds: semaforos },
+          { packId, 
+            list: semaforos.map((s) => ({
+            id: s.id,
+            green_start: s.green_start,
+            green_duration: s.green_duration,
+          })), },
         );
       }
 
@@ -70,7 +77,7 @@ export class PackService {
           );
         }
 
-        const subIds = sub.semaforos;
+        const subIds = sub.semaforos.map((s) => s.id);
 
         // Validar existência
         const existSub = await this.semaforoService.findManyByIds(subIds);
@@ -80,16 +87,25 @@ export class PackService {
           );
         }
 
+
         // Criar SubPack e conectar ao Pack
         const subPackResult = await tx.run(
           `
-          MATCH (p:Pack)
-          WHERE elementId(p) = $packId
-          CREATE (sp:SubPack)
-          MERGE (p)-[:HAS_SUBPACK]->(sp)
-          RETURN elementId(sp) AS subpackElementId
+            MATCH (p:Pack) WHERE elementId(p) = $packId
+            CREATE (sp:SubPack {
+              name: $name,
+              green_start: $green_start,
+              green_duration: $green_duration
+            })
+            MERGE (p)-[:HAS_SUBPACK]->(sp)
+            RETURN elementId(sp) AS subpackElementId
           `,
-          { packId },
+          {
+            packId,
+            name: sub.name,
+            green_start: sub.green_start,
+            green_duration: sub.green_duration,
+          },
         );
 
         const subpackId = subPackResult.records[0].get('subpackElementId');
@@ -97,12 +113,12 @@ export class PackService {
         // Conectar semáforos ao SubPack
         await tx.run(
           `
-          MATCH (sp:SubPack)
-          WHERE elementId(sp) = $subpackId
-          UNWIND $subIds AS sid
-          MATCH (s:Semaforo)
-          WHERE elementId(s) = sid
-          MERGE (sp)-[:HAS_SEMAFORO]->(s)
+            MATCH (sp:SubPack)
+            WHERE elementId(sp) = $subpackId
+            UNWIND $subIds AS sid
+            MATCH (s:Semaforo)
+            WHERE elementId(s) = sid
+            MERGE (sp)-[:HAS_SEMAFORO]->(s)
           `,
           { subpackId, subIds },
         );
