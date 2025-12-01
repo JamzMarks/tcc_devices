@@ -1,5 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { DeviceCommand } from '@Types/device.command';
+import { DeviceCommand, IotHubCommand } from '@Types/device.command';
 import { Client } from 'azure-iothub';
 import { Message } from 'azure-iothub/dist/common-core/message';
 
@@ -22,7 +22,7 @@ export class IoTHubService implements OnModuleInit {
     }
   }
 
-  async sendToDevice(deviceId: string, payload: DeviceCommand) {
+  async sendToDevice(deviceId: string, payload: IotHubCommand) {
     const msg = new Message(JSON.stringify(payload));
 
     this.logger.log(`Enviando C2D → ${deviceId}`);

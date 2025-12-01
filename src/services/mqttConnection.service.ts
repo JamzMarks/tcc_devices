@@ -65,7 +65,7 @@ export class MqttConnectionService {
           green_start: green_start,
           green_duration: green_duration,
           cycle_total: pack.cicle,
-          timestamp: now,
+          serverIssuedAt: now,
         },
         pack: pack ? { ...pack, subPacks } : null,
       };
@@ -100,30 +100,6 @@ export class MqttConnectionService {
       iso: new Date().toISOString(),
     };
   }
-  // async mockSemaforos(){
-  //   const base = 60;
-  //   const variation = Math.floor(Math.random() * 30);
-  //   const flip = Math.random() > 0.5;
-
-  //   if (deviceId === "teste1") {
-  //     this.states["teste1"] = {
-  //       green: base + (flip ? variation : 0),
-  //       red: base + (!flip ? variation : 0),
-  //     };
-  //     this.states["teste2"] = {
-  //       green: base + (!flip ? variation : 0),
-  //       red: base + (flip ? variation : 0),
-  //     };
-  //   }
-
-  //   if (deviceId === "teste2") {
-
-  //     return this.states["teste2"];
-  //   }
-
-  //   return this.states[deviceId];
-  // }
- 
 
   private toNumber(value: any): number {
     if (value == null) return 0;

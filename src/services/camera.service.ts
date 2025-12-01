@@ -13,11 +13,10 @@ export class CameraService {
   async createCamera(dto: {
     deviceId: string;
     ip: string;
-    nodeA: string;
-    nodeB: string;
+    type: string;
   }) {
     const session = this.neo4jService.getWriteSession();
-    const { deviceId, ip, nodeA, nodeB } = dto;
+    const { deviceId, ip, type } = dto;
 
     try {
       const result = await session.writeTransaction(async (tx) => {
@@ -40,14 +39,13 @@ export class CameraService {
             ip: $ip,
             isActive: false,
             createdAt: datetime(),
-            updatedAt: datetime()
+            updatedAt: datetime(),
+            type: $type
           })
           RETURN d, elementId(d) AS id
           `,
-          { deviceId, ip }
+          { deviceId, ip, type }
         );  
-
-        await this.linkCamera(deviceId, nodeA, nodeB, tx);  
 
         return {
           device: created.records[0].get('d').properties,
@@ -117,6 +115,8 @@ export class CameraService {
       await session.close();
     }
   }
+  
+  
 
   // async updateCamera(id: number, macAddress?: string, deviceId?: string, isActive?: boolean) {
   //   const camera = await this.prisma.camera.findUnique({ where: { id } });
@@ -162,16 +162,16 @@ export class CameraService {
     }
   }
 
-  async linkCamera(deviceId: string, nodeA: string, nodeB: string): Promise<void>;
-  async linkCamera(deviceId: string, nodeA: string, nodeB: string, transaction: Transaction);
-  async linkCamera(deviceId: string, nodeA: string, nodeB: string, transaction?: Transaction) {
+  async linkCamera(deviceId: string, nodeA: string, nodeB: string, wayId: string): Promise<void>;
+  async linkCamera(deviceId: string, nodeA: string, nodeB: string, wayId: string, transaction: Transaction);
+  async linkCamera(deviceId: string, nodeA: string, nodeB: string, wayId: string, transaction?: Transaction) {
     if (transaction) {
-      return this.LinkCameraFunction(deviceId, nodeA, nodeB, transaction);
+      return this.LinkCameraFunction(deviceId, nodeA, nodeB,wayId, transaction);
     }
     const session = this.neo4jService.getWriteSession();
     try {
       const result = await session.writeTransaction(async (tx) => {
-        return this.LinkCameraFunction(deviceId, nodeA, nodeB, tx);
+        return this.LinkCameraFunction(deviceId, nodeA, nodeB,wayId, tx);
       });
 
       return result;
@@ -183,7 +183,7 @@ export class CameraService {
     }
   }
 
-  private async LinkCameraFunction(deviceId: string, nodeA: string, nodeB: string, transaction: Transaction): Promise<void>{
+  private async LinkCameraFunction(deviceId: string, nodeA: string, nodeB: string, wayId: string, transaction: Transaction): Promise<void>{
     try {
         const nodes = await transaction.run(
           `

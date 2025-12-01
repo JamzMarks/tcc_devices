@@ -1,11 +1,19 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, Version } from '@nestjs/common';
+import { CameraLinkDto } from '@dtos/camera/cameraLink.dto';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Param,
+  Body,
+  Version,
+} from '@nestjs/common';
 import { CameraService } from 'src/services/camera.service';
-
 
 @Controller('camera')
 export class CameraController {
   constructor(private readonly cameraService: CameraService) {}
-
 
   @Get()
   @Version('1')
@@ -21,7 +29,7 @@ export class CameraController {
 
   @Post()
   @Version('1')
-  create(@Body() body: { deviceId: string, ip: string, nodeA: string, nodeB: string}) {
+  create(@Body() body: { deviceId: string; ip: string; type: string }) {
     return this.cameraService.createCamera(body);
   }
 
@@ -43,5 +51,22 @@ export class CameraController {
   @Version('1')
   delete(@Param('id') id: string) {
     return this.cameraService.deleteCamera(id);
+  }
+
+  @Post(':deviceId/link')
+  @Version('1')
+  async linkDeviceToNode(
+    @Param('deviceId') deviceId: string,
+    @Body()
+    body: CameraLinkDto
+  ) {
+    console.log('Linking camera to nodes:', deviceId, body);
+    const semaforo = await this.cameraService.linkCamera(
+      deviceId,
+      body.nodeId,
+      body.siblingId,
+      body.wayId
+    );
+    return semaforo;
   }
 }

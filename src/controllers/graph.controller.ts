@@ -11,6 +11,7 @@ import {
   UploadedFile,
   Body,
   Param,
+  Version,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
@@ -129,6 +130,20 @@ export class GraphController {
     try {
       console.log(body)
       const data = await this.graphService.createDevice(body.node1, body.node2, body.wayId, body.deviceData);
+      return res.status(HttpStatus.OK).json(data);
+    } catch (err) {
+      console.error(err);
+      return res
+        .status(500)
+        .json({ message: 'Erro exportando grafo', error: err.message });
+    }
+  }
+  
+  @Get(':id/siblings')
+  @Version('1')
+  async siblings(@Param('id') id: string, @Res() res: Response) {
+    try {
+      const data = await this.graphService.getSiblings(id);
       return res.status(HttpStatus.OK).json(data);
     } catch (err) {
       console.error(err);

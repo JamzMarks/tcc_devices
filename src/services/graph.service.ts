@@ -1,4 +1,9 @@
-import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import neo4j, { Driver, Session } from 'neo4j-driver';
 import * as fs from 'fs';
 import * as xml2js from 'xml2js';
@@ -138,128 +143,127 @@ export class GraphService implements OnModuleInit, OnModuleDestroy {
     }
   }
   async exportGraphForBuild2(): Promise<{
-  nodes: any[];
-  relationships: any[];
-  devices: any[];
-}> {
-  const session = this.session();
-  try {
-    // -------------------------------------------------------
-    // 1. Coletar Ways e seus nodes associados
-    // -------------------------------------------------------
-    const waysResult = await session.run(`
-      MATCH p=(w:OSMWay)-[:HAS_NODE]->(n:OSMNode)
-      RETURN p
-    `);
+    nodes: any[];
+    relationships: any[];
+    devices: any[];
+  }> {
+    const session = this.session();
+    try {
+      // -------------------------------------------------------
+      // 1. Coletar Ways e seus nodes associados
+      // -------------------------------------------------------
+      const waysResult = await session.run(`
+        MATCH p=(w:OSMWay)-[:HAS_NODE]->(n:OSMNode)
+        RETURN p
+      `);
 
-    // -------------------------------------------------------
-    // 2. Coletar Semaforos e Devices
-    // -------------------------------------------------------
-    const devicesResult = await session.run(`
-      MATCH (n:Semaforo), (m:Device) 
-      RETURN n, m
-    `);
+      // -------------------------------------------------------
+      // 2. Coletar Semaforos e Devices
+      // -------------------------------------------------------
+      const devicesResult = await session.run(`
+        MATCH (n:Semaforo), (m:Device) 
+        RETURN n, m
+      `);
 
-    const devices: any[] = [];
-    for (const rec of devicesResult.records) {
-      const semaforo = rec.get('n');
-      const device = rec.get('m');
+      const devices: any[] = [];
+      for (const rec of devicesResult.records) {
+        const semaforo = rec.get('n');
+        const device = rec.get('m');
 
-      if (semaforo) {
-        devices.push({
-          id: semaforo.elementId,
-          type: 'Semaforo',
-          labels: semaforo.labels,
-          properties: semaforo.properties,
-        });
-      }
-
-      if (device) {
-        devices.push({
-          id: device.elementId,
-          type: 'Device',
-          labels: device.labels,
-          properties: device.properties,
-        });
-      }
-    }
-
-    // -------------------------------------------------------
-    // 3. Construção do mapa de Ways
-    // -------------------------------------------------------
-    const waysMap = new Map<string, { properties: any; nodes: any[] }>();
-
-    for (const rec of waysResult.records) {
-      const path = rec.get('p');
-
-      for (const segment of path.segments) {
-        const wayNode = segment.start;
-        const osmNode = segment.end;
-
-        const wayId = wayNode.elementId;
-        const nodeId = osmNode.elementId;
-
-        if (!waysMap.has(wayId)) {
-          const { id, ...props } = wayNode.properties;
-
-          waysMap.set(wayId, {
-            properties: {
-              label: wayNode.labels,
-              wayId: wayId,
-              ...props,
-            },
-            nodes: [],
+        if (semaforo) {
+          devices.push({
+            id: semaforo.elementId,
+            type: 'Semaforo',
+            labels: semaforo.labels,
+            properties: semaforo.properties,
           });
         }
 
-        const wayData = waysMap.get(wayId)!;
+        if (device) {
+          devices.push({
+            id: device.elementId,
+            type: 'Device',
+            labels: device.labels,
+            properties: device.properties,
+          });
+        }
+      }
 
-        wayData.nodes.push({
-          id: nodeId,
-          lat: osmNode.properties.lat,
-          lon: osmNode.properties.lon,
+      // -------------------------------------------------------
+      // 3. Construção do mapa de Ways
+      // -------------------------------------------------------
+      const waysMap = new Map<string, { properties: any; nodes: any[] }>();
+
+      for (const rec of waysResult.records) {
+        const path = rec.get('p');
+
+        for (const segment of path.segments) {
+          const wayNode = segment.start;
+          const osmNode = segment.end;
+
+          const wayId = wayNode.elementId;
+          const nodeId = osmNode.elementId;
+
+          if (!waysMap.has(wayId)) {
+            const { id, ...props } = wayNode.properties;
+
+            waysMap.set(wayId, {
+              properties: {
+                label: wayNode.labels,
+                wayId: wayId,
+                ...props,
+              },
+              nodes: [],
+            });
+          }
+
+          const wayData = waysMap.get(wayId)!;
+
+          wayData.nodes.push({
+            id: nodeId,
+            lat: osmNode.properties.lat,
+            lon: osmNode.properties.lon,
+          });
+        }
+      }
+
+      // -------------------------------------------------------
+      // 4. Coletar relações CONNECTED_TO com wayId correto
+      // -------------------------------------------------------
+      const relsResult = await session.run(`
+        MATCH (a)-[r]-(b)
+        WHERE toUpper(type(r)) <> "HAS_NODE"
+        RETURN a, r, b
+      `);
+
+      const relationships: any[] = [];
+
+      for (const rec of relsResult.records) {
+        const a = rec.get('a');
+        const rel = rec.get('r');
+
+        const { index, ...props } = rel.properties;
+
+        relationships.push({
+          id: rel.elementId,
+          type: rel.type,
+          startNodeId: rel.startNodeElementId,
+          endNodeId: rel.endNodeElementId,
         });
       }
+
+      // -------------------------------------------------------
+      // 5. Retornar JSON final
+      // -------------------------------------------------------
+      return {
+        nodes: Array.from(waysMap.values()),
+        relationships,
+        devices,
+      };
+    } finally {
+      await session.close();
     }
-
-    // -------------------------------------------------------
-    // 4. Coletar relações CONNECTED_TO com wayId correto
-    // -------------------------------------------------------
-    const relsResult = await session.run(`
-      MATCH (w:OSMNode)-[r:CONNECTED_TO]->(n:OSMNode)
-      RETURN w, r
-    `);
-
-    const relationships: any[] = [];
-
-    for (const rec of relsResult.records) {
-      const way = rec.get("w");
-      const rel = rec.get("r");
-
-      const { index, ...props } = rel.properties;
-
-      relationships.push({
-        id: rel.elementId,
-        type: rel.type,
-        wayId: way.elementId,            // <-- ESSENCIAL
-        startNodeId: rel.startNodeElementId,
-        endNodeId: rel.endNodeElementId      
-      });
-    }
-
-    // -------------------------------------------------------
-    // 5. Retornar JSON final
-    // -------------------------------------------------------
-    return {
-      nodes: Array.from(waysMap.values()),
-      relationships,
-      devices,
-    };
-
-  } finally {
-    await session.close();
   }
-}
 
   async clearWayNodes(wayId: string): Promise<void> {
     const session = this.session(true);
@@ -446,7 +450,6 @@ export class GraphService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  
   async createDevice(
     nodeId1: string,
     nodeId2: string,
@@ -621,6 +624,32 @@ export class GraphService implements OnModuleInit, OnModuleDestroy {
       await tx.commit();
     } catch (err) {
       await tx.rollback();
+      throw err;
+    } finally {
+      await session.close();
+    }
+  }
+
+  async getSiblings(id: string): Promise<any[]> {
+    const session = this.driver.session();
+
+    try {
+      const result = await session.run(
+        `
+      MATCH (c:OSMNode)
+      WHERE elementId(c) = $id
+      MATCH (c)-[:CONNECTED_TO]-(neighbor)
+      RETURN neighbor
+      `,
+        { id },
+      );
+
+      if (result.records.length === 0) {
+        throw new NotFoundException('Vizinhos não encontrados');
+      }
+
+      return result.records.map((rec) => rec.get('neighbor'));
+    } catch (err) {
       throw err;
     } finally {
       await session.close();
